@@ -25,7 +25,6 @@ const adminNavigation = [
     section: 'Pilotage',
     items: [
       { label: 'Tableau de bord', path: '/admin', icon: LayoutDashboard },
-      { label: 'Rapports & IA', path: '/admin/rapports', icon: BarChart3, badge: 'IA' },
     ],
   },
   {

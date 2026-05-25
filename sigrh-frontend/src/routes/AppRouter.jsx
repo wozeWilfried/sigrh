@@ -14,7 +14,6 @@ import AttendanceEntryPage from '../pages/admin/AttendanceEntryPage'
 import AttendanceHistoryPage from '../pages/admin/AttendanceHistoryPage'
 import Paie from '../pages/admin/Paie'
 import PaieGenerer from '../pages/admin/PaieGenerer'
-import Rapports from '../pages/admin/Rapports'
 import Utilisateurs from '../pages/admin/Utilisateurs'
 import Parametres from '../pages/admin/Parametres'
 import RHDashboard from '../pages/rh/Dashboard'
@@ -161,14 +160,6 @@ export default function AppRouter() {
         element={
           <ProtectedRoute roles={['ADMIN']}>
             <PaieGenerer />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/rapports"
-        element={
-          <ProtectedRoute roles={['ADMIN']}>
-            <Rapports />
           </ProtectedRoute>
         }
       />
