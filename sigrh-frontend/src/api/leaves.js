@@ -54,7 +54,7 @@ function wait() {
 }
 
 function shouldUseFallback(error) {
-  return !error.response || error.response.status === 404 || error.response.status >= 500
+  return !error.response || error.response.status === 404 || error.response.status >= 400
 }
 
 function normalizeStatus(status) {
@@ -92,6 +92,7 @@ export async function getLeaves(filters = {}) {
       params: {
         statut: filters.status || undefined,
       },
+      silentFallback: true
     })
     const leaves = Array.isArray(response.data) ? response.data : response.data?.content ?? []
     return applyFilters(leaves.map(normalizeLeave), filters)
@@ -107,7 +108,7 @@ export async function approveLeave(id, comment = '') {
     const response = await api.put(`/conges/${id}/valider`, {
       statut: 'APPROUVE',
       commentaire: comment,
-    })
+    }, { silentFallback: true })
     return normalizeLeave(response.data)
   } catch (error) {
     if (!shouldUseFallback(error)) throw error
@@ -126,7 +127,7 @@ export async function rejectLeave(id, comment = '') {
     const response = await api.put(`/conges/${id}/valider`, {
       statut: 'REJETE',
       commentaire: comment,
-    })
+    }, { silentFallback: true })
     return normalizeLeave(response.data)
   } catch (error) {
     if (!shouldUseFallback(error)) throw error
@@ -142,7 +143,7 @@ export async function rejectLeave(id, comment = '') {
 
 export async function getPendingCount() {
   try {
-    const response = await api.get('/conges', { params: { statut: 'EN_ATTENTE' } })
+    const response = await api.get('/conges', { params: { statut: 'EN_ATTENTE' }, silentFallback: true })
     const leaves = Array.isArray(response.data) ? response.data : response.data?.content ?? []
     return leaves.length
   } catch (error) {

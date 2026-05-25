@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   BarChart3,
   Bell,
+  BrainCircuit,
   CalendarCheck,
   ChevronDown,
   ChevronLeft,
@@ -73,6 +74,18 @@ const adminNavigation = [
         icon: Network,
         children: [
           { label: 'Départements & Postes', path: '/departments' },
+        ],
+      },
+    ],
+  },
+  {
+    section: 'IA & Analytics',
+    items: [
+      {
+        label: 'IA & Analytics',
+        icon: BrainCircuit,
+        children: [
+          { label: 'Prédictions turnover', path: '/ia/predictions' },
         ],
       },
     ],

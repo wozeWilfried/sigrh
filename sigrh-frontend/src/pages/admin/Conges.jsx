@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Loader2,
   MessageSquare,
+  Plus,
   RefreshCcw,
   Umbrella,
   UserRound,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react'
 import AppLayout from '../../components/layout/AppLayout'
 import useLeaves from '../../hooks/useLeaves'
+import CreateLeaveModal from '../../components/CreateLeaveModal'
 
 const statusStyles = {
   EN_ATTENTE: 'bg-yellow-50 text-yellow-700 ring-yellow-200',
@@ -41,16 +43,26 @@ export default function Conges() {
     reload,
   } = useLeaves()
   const [actionModal, setActionModal] = useState(null)
+  const [createModalOpen, setCreateModalOpen] = useState(false)
 
   async function handleConfirmAction(comment) {
     await processLeave({ ...actionModal, comment })
     setActionModal(null)
   }
 
+  function handleCreateSuccess() {
+    setCreateModalOpen(false)
+    reload()
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">
-        <Header pendingCount={pendingCount} onReload={reload} />
+        <Header
+          pendingCount={pendingCount}
+          onReload={reload}
+          onNewLeave={() => setCreateModalOpen(true)}
+        />
         {toast && <Toast type={toast.type} message={toast.message} onClose={clearToast} />}
         <Filters filters={filters} departments={departments} onChange={updateFilter} />
 
@@ -86,11 +98,17 @@ export default function Conges() {
           onConfirm={handleConfirmAction}
         />
       )}
+
+      <CreateLeaveModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </AppLayout>
   )
 }
 
-function Header({ pendingCount, onReload }) {
+function Header({ pendingCount, onReload, onNewLeave }) {
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div>
@@ -111,6 +129,15 @@ function Header({ pendingCount, onReload }) {
         >
           <RefreshCcw size={16} />
           Actualiser
+        </button>
+        <button
+          id="btn-nouvelle-demande"
+          type="button"
+          onClick={onNewLeave}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-deep px-5 text-sm font-semibold text-white shadow-sm shadow-blue-deep/20 transition-all hover:bg-blue-hover active:scale-95"
+        >
+          <Plus size={17} strokeWidth={2.5} />
+          Nouvelle demande
         </button>
       </div>
     </div>

@@ -20,6 +20,9 @@ import Parametres from '../pages/admin/Parametres'
 import RHDashboard from '../pages/rh/Dashboard'
 import ManagerDashboard from '../pages/manager/Dashboard'
 import SecretaryDashboard from '../pages/secretary/Dashboard'
+import TurnoverPredictions from '../pages/admin/TurnoverPredictions'
+import AlertsPage from '../pages/admin/AlertsPage'
+import NotFoundPage from '../pages/NotFoundPage'
 
 export default function AppRouter() {
   const { user, loading } = useAuth()
@@ -186,6 +189,22 @@ export default function AppRouter() {
         }
       />
       <Route
+        path="/ia/predictions"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
+            <TurnoverPredictions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/alertes"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'MANAGER', 'RH']}>
+            <AlertsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/rh"
         element={
           <ProtectedRoute roles={['RH']}>
@@ -209,7 +228,7 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }

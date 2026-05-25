@@ -21,6 +21,13 @@ const FeatureRow = ({ icon, title, desc }) => (
 
 const InputField = ({ label, icon, error, rightElement, ...props }) => {
   const paddingRight = rightElement ? 'pr-16' : 'pr-4'
+  const iconContent = icon?.type === 'path' ? (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {icon}
+    </svg>
+  ) : (
+    icon
+  )
 
   return (
     <div className="space-y-3">
@@ -29,7 +36,7 @@ const InputField = ({ label, icon, error, rightElement, ...props }) => {
       </label>
       <div className="relative group">
         <span className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 group-focus-within:text-blue-700 transition-colors">
-          {icon}
+          {iconContent}
         </span>
         <input
           {...props}
