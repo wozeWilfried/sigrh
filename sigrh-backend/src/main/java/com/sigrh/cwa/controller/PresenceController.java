@@ -3,6 +3,7 @@ package com.sigrh.cwa.controller;
 import com.sigrh.cwa.entity.Presence;
 import com.sigrh.cwa.service.PresenceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
@@ -28,13 +29,13 @@ public class PresenceController {
     @GetMapping("/employe/{employeId}")
     public ResponseEntity<List<Presence>> findByEmployeId(
             @PathVariable Long employeId,
-            @RequestParam LocalDate debut,
-            @RequestParam LocalDate fin) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate debut,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
         return ResponseEntity.ok(presenceService.findByEmployeIdAndDateBetween(employeId, debut, fin));
     }
 
     @GetMapping("/date/{date}")
-    public ResponseEntity<List<Presence>> findByDate(@PathVariable LocalDate date) {
+    public ResponseEntity<List<Presence>> findByDate(@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(presenceService.findByDate(date));
     }
 
