@@ -3,7 +3,6 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   BarChart3,
   Bell,
-  Building2,
   CalendarCheck,
   ChevronDown,
   ChevronLeft,
@@ -11,6 +10,7 @@ import {
   ClipboardCheck,
   FileText,
   LayoutDashboard,
+  Network,
   Settings,
   ShieldCheck,
   UserCog,
@@ -37,15 +37,34 @@ const adminNavigation = [
           { label: 'Ajouter un employé', path: '/admin/employes/ajouter' },
         ],
       },
-      { label: 'Départements', path: '/admin/departements', icon: Building2 },
       { label: 'Congés', path: '/admin/conges', icon: CalendarCheck, badge: 3 },
-      { label: 'Présences', path: '/admin/presences', icon: ClipboardCheck },
+      {
+        label: 'Présences',
+        icon: ClipboardCheck,
+        children: [
+          { label: 'Vue générale', path: '/admin/presences' },
+          { label: 'Saisie des présences', path: '/presences/saisie' },
+          { label: 'Historique & Statistiques', path: '/presences/historique' },
+        ],
+      },
       {
         label: 'Paie',
         icon: FileText,
         children: [
           { label: 'Fiches de paie', path: '/admin/paie' },
           { label: 'Générer la paie', path: '/admin/paie/generer' },
+        ],
+      },
+    ],
+  },
+  {
+    section: 'Structure',
+    items: [
+      {
+        label: 'Structure',
+        icon: Network,
+        children: [
+          { label: 'Départements & Postes', path: '/departments' },
         ],
       },
     ],

@@ -10,6 +10,8 @@ import EmployeeProfilePage from '../pages/admin/EmployeeProfilePage'
 import Departements from '../pages/admin/Departements'
 import Conges from '../pages/admin/Conges'
 import Presences from '../pages/admin/Presences'
+import AttendanceEntryPage from '../pages/admin/AttendanceEntryPage'
+import AttendanceHistoryPage from '../pages/admin/AttendanceHistoryPage'
 import Paie from '../pages/admin/Paie'
 import PaieGenerer from '../pages/admin/PaieGenerer'
 import Rapports from '../pages/admin/Rapports'
@@ -96,6 +98,14 @@ export default function AppRouter() {
         }
       />
       <Route
+        path="/departments"
+        element={
+          <ProtectedRoute roles={['ADMIN']}>
+            <Departements />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin/conges"
         element={
           <ProtectedRoute roles={['ADMIN']}>
@@ -108,6 +118,22 @@ export default function AppRouter() {
         element={
           <ProtectedRoute roles={['ADMIN']}>
             <Presences />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/presences/saisie"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'RH', 'EMPLOYE']}>
+            <AttendanceEntryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/presences/historique"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
+            <AttendanceHistoryPage />
           </ProtectedRoute>
         }
       />
