@@ -13,12 +13,31 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Configuration de sécurité Spring Security avec authentification JWT.
+ * Définit:
+ * - Les règles d'autorisation par rôle (ADMIN, RH, MANAGER, EMPLOYE)
+ * - L'authentification sans session (STATELESS)
+ * - Les endpoints publics et protégés
+ * - L'encodage des mots de passe
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
 
+    /**
+     * Configure la chaîne de filtres de sécurité HTTP.
+     * Définit les autorisations par rôle et les endpoints publics.
+     * 
+     * @param http Configuration HTTP Security
+     * @return Chaîne de filtres de sécurité
+     * @throws Exception En cas d'erreur de configuration
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -57,9 +76,22 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Encodeur de mots de passe utilisant BCrypt.
+     * Les mots de passe sont hashés de manière sécurisée.
+     * 
+     * @return Encodeur BCrypt
+     */
     @Bean
     public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
+    /**
+     * Gestionnaire d'authentification pour valider les identifiants.
+     * 
+     * @param config Configuration d'authentification
+     * @return Gestionnaire d'authentification
+     * @throws Exception En cas d'erreur de configuration
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
