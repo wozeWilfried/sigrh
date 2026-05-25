@@ -6,32 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
-@RestController
-@RequestMapping("/api/analyse")
-@RequiredArgsConstructor
-public class AnalysePredictiveController {
-
-    private final AnalysePredictiveService analyseService;
-
-    // Tableau de bord prédictif global
-
-    // Analyse du turnover d'un employé
-
-    // Analyse du turnover de tous les employés actifs
-
-    // Absentéisme par département
-
-    // Prévision de la masse salariale
-
-    // Tendance des congés sur 12 mois
-
-    // Liste des alertes
-
-    // Marquer une alerte comme traitée
-
-    // Générer toutes les alertes (déclenchement manuel)
-    @PostMapping("/alertes/generer")
-    public ResponseEntity<Map<String, Object>> genererAlertes() {
+/**
+ * Contr\u00f4leur REST pour l'analyse pr\u00e9dictive et l'intelligence RH.\n * Fournit des insights bas\u00e9s sur l'analyse de donn\u00e9es RH.\n * \n * Point de terminaison: /api/analyse\n * \n * @author \u00c9quipe SIGRH\n * @version 1.0\n */\n@RestController\n@RequestMapping(\"/api/analyse\")\n@RequiredArgsConstructor\npublic class AnalysePredictiveController {\n\n    private final AnalysePredictiveService analyseService;\n\n    /**\n     * G\u00e9n\u00e8re le tableau de bord pr\u00e9dictif global avec tous les indicateurs d'alerte.\n     * \n     * @return Tableau de bord contenant scores de turnover, abs\u00e9nt\u00e9isme, pr\u00e9visions\n     */\n    // Tableau de bord pr\u00e9dictif global\n\n    /**\n     * Analyse le risque de d\u00e9part (turnover) d'un employ\u00e9 sp\u00e9cifique.\n     * \n     * @return D\u00e9tails du score de turnover et facteurs de risque\n     */\n    // Analyse du turnover d'un employ\u00e9\n\n    /**\n     * Analyse le turnover pour tous les employ\u00e9s actifs.\n     * \n     * @return Liste des employ\u00e9s avec leurs scores de risque\n     */\n    // Analyse du turnover de tous les employ\u00e9s actifs\n\n    /**\n     * Calcule l'abs\u00e9nt\u00e9isme par d\u00e9partement.\n     * \n     * @return Statistiques d'abs\u00e9nt\u00e9isme par d\u00e9partement\n     */\n    // Abs\u00e9nt\u00e9isme par d\u00e9partement\n\n    /**\n     * Pr\u00e9voit l'\u00e9volution de la masse salariale pour les mois \u00e0 venir.\n     * \n     * @return Pr\u00e9visions de masse salariale\n     */\n    // Pr\u00e9vision de la masse salariale\n\n    /**\n     * Affiche la tendance des demandes de cong\u00e9s sur 12 mois.\n     * \n     * @return Historique des cong\u00e9s par mois\n     */\n    // Tendance des cong\u00e9s sur 12 mois\n\n    /**\n     * R\u00e9cup\u00e8re les alertes RH actives et non trait\u00e9es.\n     * \n     * @return Liste des alertes en attente de traitement\n     */\n    // Liste des alertes\n\n    /**\n     * Marque une alerte RH comme trait\u00e9e.\n     * \n     * @return Alerte marqu\u00e9e comme trait\u00e9e\n     */\n    // Marquer une alerte comme trait\u00e9e\n\n    /**\n     * G\u00e9n\u00e8re manuellement toutes les alertes RH bas\u00e9es sur les r\u00e8gles de l'application.\n     * Op\u00e9ration administrative.\n     * \n     * @return R\u00e9sum\u00e9 des alertes g\u00e9n\u00e9r\u00e9es\n     */\n    // G\u00e9n\u00e9rer toutes les alertes (d\u00e9clenchement manuel)\n    @PostMapping(\"/alertes/generer\")\n    public ResponseEntity<Map<String, Object>> genererAlertes() {
         return ResponseEntity.ok(analyseService.genererToutesLesAlertes());
     }
 }

@@ -6,6 +6,15 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
+/**
+ * Contrôleur REST pour la gestion du matériel et des équipements.
+ * Permet de gérer l'inventaire et les attributions du matériel.
+ * 
+ * Point de terminaison: /api/materiel
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @RestController
 @RequestMapping("/api/materiel")
 @RequiredArgsConstructor
