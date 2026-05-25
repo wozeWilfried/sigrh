@@ -9,6 +9,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 
+/**
+ * Initialise les données de test au démarrage de l'application.
+ * Crée:
+ * - Les comptes utilisateurs de test (Admin, RH, Manager, Employés)
+ * - Les départements de base
+ * - Les employés de test avec leurs données
+ * 
+ * Cette classe s'exécute une seule fois si la base est vide.
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
@@ -18,6 +30,11 @@ public class DataInitializer implements CommandLineRunner {
     private final DepartementRepository deptRepo;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Exécute l'initialisation des données au démarrage.
+     * 
+     * @param args Arguments de ligne de commande (non utilisés)
+     */
     @Override
     public void run(String... args) {
         if (userRepo.count() == 0) {
@@ -45,6 +62,16 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 
+    /**
+     * Crée un nouvel utilisateur avec email et rôle.
+     * Le mot de passe est encodé avec BCrypt.
+     * 
+     * @param username Nom d'utilisateur
+     * @param password Mot de passe en clair
+     * @param email Adresse email
+     * @param role Rôle utilisateur (ADMIN, RH, MANAGER, EMPLOYE)
+     * @return Utilisateur créé
+     */
     private User createUser(String username, String password, String email, Role role) {
         User u = userRepo.save(User.builder()
             .username(username).password(passwordEncoder.encode(password))
@@ -52,6 +79,21 @@ public class DataInitializer implements CommandLineRunner {
         return u;
     }
 
+    /**
+     * Crée un nouvel employé associé à un utilisateur.
+     * 
+     * @param user Utilisateur linké à l'employé
+     * @param matricule Numéro de matricule de l'employé
+     * @param nom Nom de famille
+     * @param prenom Prénom
+     * @param poste Fonction/Poste
+     * @param genre Genre (MASCULIN, FEMININ)
+     * @param salaire Salaire de base
+     * @param statut Statut (ACTIF, INACTIF, SUSPENDU)
+     * @param dept Département d'affectation
+     * @param dateNaiss Date de naissance (format YYYY-MM-DD)
+     * @param dateEmb Date d'embauche (format YYYY-MM-DD)
+     */
     private void createEmploye(User user, String matricule, String nom, String prenom,
             String poste, Genre genre, double salaire, StatutEmploye statut,
             Departement dept, String dateNaiss, String dateEmb) {

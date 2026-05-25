@@ -9,9 +9,23 @@ import io.swagger.v3.oas.models.security.SecurityRequirement;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration OpenAPI/Swagger 3.0 pour la documentation de l'API REST.
+ * Génére automatiquement la documentation interactive des endpoints.
+ * Accessible à: http://localhost:8080/swagger-ui.html
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Configuration
 public class OpenApiConfig {
 
+    /**
+     * Personnalise la configuration OpenAPI avec les détails de l'API.
+     * Définit les informations générales, le schéma d'authentification JWT.
+     * 
+     * @return Configuration OpenAPI personnalisée
+     */
     @Bean
     public OpenAPI customOpenAPI() {
         OpenAPI openAPI = new OpenAPI()
