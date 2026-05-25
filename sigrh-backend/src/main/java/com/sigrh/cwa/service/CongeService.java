@@ -3,7 +3,7 @@ package com.sigrh.cwa.service;
 import com.sigrh.cwa.dto.CongeDTO;
 import com.sigrh.cwa.entity.*;
 import com.sigrh.cwa.repository.*;
-import com.sigrh.cwa.enum.StatutConge;
+import com.sigrh.cwa.enums.StatutConge;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -35,7 +35,7 @@ public class CongeService {
 
     public CongeDTO update(Long id, CongeDTO dto) {
         Conge existing = congeRepo.findById(id).orElseThrow();
-        existing.setType(com.sigrh.cwa.enum.TypeConge.valueOf(dto.getType()));
+        existing.setType(com.sigrh.cwa.enums.TypeConge.valueOf(dto.getType()));
         existing.setDateDebut(dto.getDateDebut());
         existing.setDateFin(dto.getDateFin());
         existing.setNombreJours(dto.getNombreJours());
@@ -47,6 +47,13 @@ public class CongeService {
 
     public void delete(Long id) {
         congeRepo.deleteById(id);
+    }
+
+    public CongeDTO validerConge(Long id, CongeDTO dto) {
+        Conge existing = congeRepo.findById(id).orElseThrow();
+        existing.setStatut(StatutConge.valueOf(dto.getStatut()));
+        existing.setCommentaireRH(dto.getCommentaireRH());
+        return toDTO(congeRepo.save(existing));
     }
 
     private CongeDTO toDTO(Conge c) {
@@ -69,7 +76,7 @@ public class CongeService {
         if (dto.getEmployeId() != null) {
             c.setEmploye(employeRepo.findById(dto.getEmployeId()).orElseThrow());
         }
-        c.setType(com.sigrh.cwa.enum.TypeConge.valueOf(dto.getType()));
+        c.setType(com.sigrh.cwa.enums.TypeConge.valueOf(dto.getType()));
         c.setDateDebut(dto.getDateDebut());
         c.setDateFin(dto.getDateFin());
         c.setNombreJours(dto.getNombreJours());

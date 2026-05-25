@@ -44,4 +44,9 @@ public class CongeController {
         congeService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}/valider")
+    public ResponseEntity<CongeDTO> valider(@PathVariable Long id, @RequestBody CongeDTO dto) {
+        return ResponseEntity.ok(congeService.validerConge(id, dto));
+    }
 }

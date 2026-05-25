@@ -1,10 +1,12 @@
 package com.sigrh.cwa.service;
 
 import com.sigrh.cwa.entity.FichePaie;
+import com.sigrh.cwa.entity.Employe;
 import com.sigrh.cwa.repository.FichePaieRepository;
 import com.sigrh.cwa.repository.EmployeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -46,5 +48,26 @@ public class FichePaieService {
 
     public void delete(Long id) {
         fichePaieRepo.deleteById(id);
+    }
+
+    public FichePaie genererFichePaie(Long employeId, int mois, int annee) {
+        Employe employe = employeRepo.findById(employeId).orElseThrow();
+        Double salaireBrut = employe.getSalaire() != null ? employe.getSalaire() : 0.0;
+        
+        FichePaie fichePaie = FichePaie.builder()
+            .employe(employe)
+            .mois(mois)
+            .annee(annee)
+            .salaireBrut(salaireBrut)
+            .cotisationsCNPS(salaireBrut * 0.08)  // 8% CNPS
+            .impotIRPP(salaireBrut * 0.10)        // 10% IRPP
+            .autresRetenues(0.0)
+            .primes(0.0)
+            .salaireNet(salaireBrut - (salaireBrut * 0.08) - (salaireBrut * 0.10))
+            .dateGeneration(LocalDate.now())
+            .valide(false)
+            .build();
+        
+        return fichePaieRepo.save(fichePaie);
     }
 }

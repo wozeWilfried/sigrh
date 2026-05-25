@@ -44,4 +44,9 @@ public class FichePaieController {
         fichePaieService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/generer")
+    public ResponseEntity<FichePaie> generer(@RequestParam Long employeId, @RequestParam int mois, @RequestParam int annee) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(fichePaieService.genererFichePaie(employeId, mois, annee));
+    }
 }
