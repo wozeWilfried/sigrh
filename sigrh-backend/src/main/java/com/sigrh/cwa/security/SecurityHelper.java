@@ -113,6 +113,16 @@ public class SecurityHelper {
         return user != null && user.getRole() == Role.EMPLOYE;
     }
 
+    public boolean isSecretaire() {
+        User user = getCurrentUser();
+        return user != null && user.getRole() == Role.SECRETAIRE;
+    }
+
+    public boolean isAdminOrRhOrSecretaire() {
+        User user = getCurrentUser();
+        return user != null && (user.getRole() == Role.ADMIN || user.getRole() == Role.RH || user.getRole() == Role.SECRETAIRE);
+    }
+
     public boolean isSelf(Long employeId) {
         return employeId != null && employeId.equals(getCurrentEmployeId());
     }

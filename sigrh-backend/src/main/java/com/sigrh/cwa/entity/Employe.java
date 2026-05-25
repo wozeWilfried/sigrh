@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
+import java.util.List;
 import com.sigrh.cwa.enums.Genre;
 import com.sigrh.cwa.enums.StatutEmploye;
 
@@ -74,4 +75,9 @@ public class Employe {
     /** Statut de l'employé */
     @Enumerated(EnumType.STRING)
     private StatutEmploye statut; // ACTIF, INACTIF, SUSPENDU
+
+    /** Contrats de l'employé */
+    @OneToMany(mappedBy = "employe")
+    @JsonIgnoreProperties("employe")
+    private List<Contrat> contrats;
 }

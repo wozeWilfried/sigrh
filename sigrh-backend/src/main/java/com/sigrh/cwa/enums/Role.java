@@ -12,5 +12,5 @@ package com.sigrh.cwa.enums;
  * @version 1.0
  */
 public enum Role {
-    ADMIN, RH, MANAGER, EMPLOYE
+    ADMIN, RH, MANAGER, EMPLOYE, SECRETAIRE
 }
