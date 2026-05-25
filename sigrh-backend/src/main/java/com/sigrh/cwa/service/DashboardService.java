@@ -33,6 +33,7 @@ public class DashboardService {
     private final FichePaieRepository paieRepo;
     private final AlerteRHRepository alerteRepo;
     private final MaterielRepository materielRepo;
+    private final ContratRepository contratRepo;
 
     /**
      * Génére un tableau de bord complet avec toutes les statistiques RH.
@@ -52,6 +53,7 @@ public class DashboardService {
         dashboard.put("presences", getStatsPresences());
         dashboard.put("paie", getStatsPaie());
         dashboard.put("materiel", getStatsMateriel());
+        dashboard.put("contrats", getStatsContrats());
         dashboard.put("alertes", getStatsAlertes());
         dashboard.put("turnover", getStatsTurnover());
         return dashboard;
@@ -309,6 +311,18 @@ public class DashboardService {
         m.put("assigne", materielRepo.countByStatut(StatutMateriel.ASSIGNE));
         m.put("enMaintenance", materielRepo.countByStatut(StatutMateriel.EN_MAINTENANCE));
         m.put("horsService", materielRepo.countByStatut(StatutMateriel.HORS_SERVICE));
+        return m;
+    }
+
+    private Map<String, Object> getStatsContrats() {
+        List<Contrat> all = contratRepo.findAll();
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("total", all.size());
+        m.put("actifs", all.stream().filter(c -> c.getStatut() == StatutContrat.ACTIF).count());
+        m.put("termines", all.stream().filter(c -> c.getStatut() == StatutContrat.TERMINE).count());
+        Map<String, Long> parType = all.stream()
+            .collect(Collectors.groupingBy(c -> c.getType().name(), Collectors.counting()));
+        m.put("parType", parType);
         return m;
     }
 
