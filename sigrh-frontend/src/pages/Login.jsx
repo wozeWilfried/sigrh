@@ -175,7 +175,7 @@ export default function Login() {
                <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-lg">
                   <div className="h-6 w-6 bg-blue-700 rounded-md rotate-45" />
                </div>
-               <h1 className="text-3xl font-black text-white tracking-tighter italic">Digitrans RH</h1>
+               <h1 className="text-3xl font-black text-white tracking-tighter italic">Sigrh RH</h1>
             </div>
             
             <div className="h-1 w-20 bg-emerald-400 rounded-full" />
@@ -206,7 +206,7 @@ export default function Login() {
           <div className="flex items-center gap-4 text-indigo-200/60 text-xs font-medium">
              <span>SIGRH v2.5.0</span>
              <span>•</span>
-             <span>© {new Date().getFullYear()} Digitrans Technology</span>
+             <span>© {new Date().getFullYear()} Sigrh Technology</span>
           </div>
         </div>
       </div>

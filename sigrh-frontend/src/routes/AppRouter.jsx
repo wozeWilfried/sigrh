@@ -6,6 +6,7 @@ import AdminDashboard from '../pages/admin/Dashboard'
 import Employes from '../pages/admin/Employes'
 import EmployesAjouter from '../pages/admin/EmployesAjouter'
 import EmployeeFormPage from '../pages/admin/EmployeeFormPage'
+import EmployeeProfilePage from '../pages/admin/EmployeeProfilePage'
 import Departements from '../pages/admin/Departements'
 import Conges from '../pages/admin/Conges'
 import Presences from '../pages/admin/Presences'
@@ -59,6 +60,22 @@ export default function AppRouter() {
         element={
           <ProtectedRoute roles={['ADMIN']}>
             <EmployesAjouter />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/employes/:id"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
+            <EmployeeProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employees/:id"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
+            <EmployeeProfilePage />
           </ProtectedRoute>
         }
       />

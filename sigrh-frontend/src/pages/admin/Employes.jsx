@@ -305,7 +305,11 @@ function EmployeeRow({ employee }) {
       </td>
       <td className="whitespace-nowrap px-5 py-4">
         <div className="flex items-center gap-2">
-          <ActionButton label="Voir" icon={Eye} />
+          <ActionButton
+            label="Voir"
+            icon={Eye}
+            to={employeeId ? `/admin/employes/${employeeId}` : undefined}
+          />
           <ActionButton
             label="Modifier"
             icon={Pencil}
