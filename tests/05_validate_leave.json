@@ -1,0 +1,28 @@
+{
+  "test_name": "Valider un Congé",
+  "description": "Valide ou refuse une demande de congé",
+  "endpoint": "PUT /api/conges/{id}/valider",
+  "url": "http://localhost:8080/api/conges/1/valider",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer YOUR_JWT_TOKEN_HERE"
+  },
+  "body": {
+    "statut": "APPROUVE",
+    "commentaireRH": "Congé approuvé avec plaisir\""
+  },
+  "expected_response": {
+    "id": 1,
+    "employeId": 2,
+    "employeNom": "Dupont Jean",
+    "type": "ANNUEL",
+    "dateDebut": "2024-06-01",
+    "dateFin": "2024-06-15",
+    "nombreJours": 15,
+    "motif": "Vacances d'été",
+    "statut": "APPROUVE",
+    "commentaireRH": "Congé approuvé avec plaisir"
+  },
+  "http_status": 200,
+  "notes": "Statuts possibles: EN_ATTENTE, APPROUVE, REFUSE. Seul RH/ADMIN peuvent valider"
+}

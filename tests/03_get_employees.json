@@ -1,0 +1,47 @@
+{
+  "test_name": "Récupérer tous les Employés",
+  "description": "Retourne la liste de tous les employés du système",
+  "endpoint": "GET /api/employes",
+  "url": "http://localhost:8080/api/employes",
+  "headers": {
+    "Authorization": "Bearer YOUR_JWT_TOKEN_HERE"
+  },
+  "expected_response": [
+    {
+      "id": 1,
+      "matricule": "EMP001",
+      "nom": "Admin",
+      "prenom": "Système",
+      "email": "admin@sigrh.com",
+      "telephone": null,
+      "genre": null,
+      "dateNaissance": null,
+      "dateEmbauche": null,
+      "poste": "Administrateur",
+      "salaire": null,
+      "photoUrl": null,
+      "departementId": 1,
+      "departementNom": "Ressources Humaines",
+      "statut": "ACTIF"
+    },
+    {
+      "id": 2,
+      "matricule": "EMP002",
+      "nom": "Dupont",
+      "prenom": "Jean",
+      "email": "jean.dupont@sigrh.com",
+      "telephone": "+223 66 12 34 56",
+      "genre": "MASCULIN",
+      "dateNaissance": "1990-05-15",
+      "dateEmbauche": "2023-01-10",
+      "poste": "Développeur",
+      "salaire": 450000,
+      "photoUrl": null,
+      "departementId": 1,
+      "departementNom": "Ressources Humaines",
+      "statut": "ACTIF"
+    }
+  ],
+  "http_status": 200,
+  "notes": "Remplacer Authorization par votre token JWT réel"
+}

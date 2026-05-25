@@ -1,0 +1,34 @@
+{
+  "test_name": "Demander un Congé",
+  "description": "Crée une demande de congé pour un employé",
+  "endpoint": "POST /api/conges",
+  "url": "http://localhost:8080/api/conges",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer YOUR_JWT_TOKEN_HERE"
+  },
+  "body": {
+    "employeId": 2,
+    "type": "ANNUEL",
+    "dateDebut": "2024-06-01",
+    "dateFin": "2024-06-15",
+    "nombreJours": 15,
+    "motif": "Vacances d'été",
+    "statut": "EN_ATTENTE",
+    "commentaireRH": ""
+  },
+  "expected_response": {
+    "id": 1,
+    "employeId": 2,
+    "employeNom": "Dupont Jean",
+    "type": "ANNUEL",
+    "dateDebut": "2024-06-01",
+    "dateFin": "2024-06-15",
+    "nombreJours": 15,
+    "motif": "Vacances d'été",
+    "statut": "EN_ATTENTE",
+    "commentaireRH": ""
+  },
+  "http_status": 201,
+  "notes": "Types de congé: ANNUEL, MALADIE, MATERNITE, SANS_SOLDE"
+}

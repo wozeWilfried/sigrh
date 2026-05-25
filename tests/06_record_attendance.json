@@ -1,0 +1,34 @@
+{
+  "test_name": "Enregistrer une Présence",
+  "description": "Enregistre la présence/absence d'un employé",
+  "endpoint": "POST /api/presences",
+  "url": "http://localhost:8080/api/presences",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer YOUR_JWT_TOKEN_HERE"
+  },
+  "body": {
+    "employe": {
+      "id": 2
+    },
+    "date": "2024-05-25",
+    "heureArrivee": "08:30:00",
+    "heureDepart": "17:00:00",
+    "statut": "PRESENT"
+  },
+  "expected_response": {
+    "id": 1,
+    "employe": {
+      "id": 2,
+      "matricule": "EMP002",
+      "nom": "Dupont",
+      "prenom": "Jean"
+    },
+    "date": "2024-05-25",
+    "heureArrivee": "08:30:00",
+    "heureDepart": "17:00:00",
+    "statut": "PRESENT"
+  },
+  "http_status": 201,
+  "notes": "Statuts: PRESENT, ABSENT, RETARD, CONGE"
+}

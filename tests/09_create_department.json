@@ -1,0 +1,24 @@
+{
+  "test_name": "Créer un Département",
+  "description": "Crée un nouveau département",
+  "endpoint": "POST /api/departements",
+  "url": "http://localhost:8080/api/departements",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer YOUR_JWT_TOKEN_HERE"
+  },
+  "body": {
+    "nom": "Développement",
+    "description": "Département Développement Logiciel",
+    "responsable": "Chef Développement"
+  },
+  "expected_response": {
+    "id": 2,
+    "nom": "Développement",
+    "description": "Département Développement Logiciel",
+    "responsable": "Chef Développement",
+    "employes": []
+  },
+  "http_status": 201,
+  "notes": "Seul ADMIN peut créer des départements"
+}

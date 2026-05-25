@@ -1,0 +1,27 @@
+{
+  "test_name": "Recherche Globale",
+  "description": "Recherche tous les employés et départements correspondant au terme",
+  "endpoint": "GET /api/search",
+  "url": "http://localhost:8080/api/search?q=dupont",
+  "headers": {
+    "Authorization": "Bearer YOUR_JWT_TOKEN_HERE"
+  },
+  "query_params": {
+    "q": "dupont"
+  },
+  "expected_response": {
+    "employes": [
+      {
+        "id": 2,
+        "nom": "Dupont Jean",
+        "matricule": "EMP002",
+        "poste": "Développeur",
+        "type": "employe"
+      }
+    ],
+    "departements": [],
+    "total": 1
+  },
+  "http_status": 200,
+  "notes": "Recherche par: nom, prénom, matricule, poste, email"
+}

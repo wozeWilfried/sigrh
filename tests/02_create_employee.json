@@ -1,0 +1,42 @@
+{
+  "test_name": "Créer un Employé",
+  "description": "Crée un nouvel employé dans le système",
+  "endpoint": "POST /api/employes",
+  "url": "http://localhost:8080/api/employes",
+  "headers": {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer YOUR_JWT_TOKEN_HERE"
+  },
+  "body": {
+    "matricule": "EMP002",
+    "nom": "Dupont",
+    "prenom": "Jean",
+    "email": "jean.dupont@sigrh.com",
+    "telephone": "+223 66 12 34 56",
+    "genre": "MASCULIN",
+    "dateNaissance": "1990-05-15",
+    "dateEmbauche": "2023-01-10",
+    "poste": "Développeur",
+    "salaire": 450000,
+    "departementId": 1,
+    "statut": "ACTIF"
+  },
+  "expected_response": {
+    "id": 2,
+    "matricule": "EMP002",
+    "nom": "Dupont",
+    "prenom": "Jean",
+    "email": "jean.dupont@sigrh.com",
+    "telephone": "+223 66 12 34 56",
+    "genre": "MASCULIN",
+    "dateNaissance": "1990-05-15",
+    "dateEmbauche": "2023-01-10",
+    "poste": "Développeur",
+    "salaire": 450000,
+    "departementId": 1,
+    "departementNom": "Ressources Humaines",
+    "statut": "ACTIF"
+  },
+  "http_status": 201,
+  "notes": "Remplacer Authorization par votre token JWT réel"
+}

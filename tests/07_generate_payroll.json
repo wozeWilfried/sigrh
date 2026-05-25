@@ -1,0 +1,35 @@
+{
+  "test_name": "Générer une Fiche de Paie",
+  "description": "Génère automatiquement une fiche de paie pour un employé",
+  "endpoint": "POST /api/fiches-paie/generer",
+  "url": "http://localhost:8080/api/fiches-paie/generer?employeId=2&mois=5&annee=2024",
+  "headers": {
+    "Authorization": "Bearer YOUR_JWT_TOKEN_HERE"
+  },
+  "query_params": {
+    "employeId": 2,
+    "mois": 5,
+    "annee": 2024
+  },
+  "expected_response": {
+    "id": 1,
+    "employe": {
+      "id": 2,
+      "matricule": "EMP002",
+      "nom": "Dupont",
+      "prenom": "Jean"
+    },
+    "mois": 5,
+    "annee": 2024,
+    "salaireBrut": 450000,
+    "cotisationsCNPS": 36000,
+    "impotIRPP": 45000,
+    "autresRetenues": 0,
+    "primes": 0,
+    "salaireNet": 369000,
+    "dateGeneration": "2024-05-25",
+    "valide": false
+  },
+  "http_status": 201,
+  "notes": "Calculs automatiques: CNPS=8%, IRPP=10%, Salaire Net = Brut - (CNPS+IRPP). Seul RH/ADMIN peuvent générer"
+}

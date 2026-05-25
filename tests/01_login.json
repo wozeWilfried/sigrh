@@ -1,0 +1,20 @@
+{
+  "test_name": "Login - Authentification",
+  "description": "Récupère un JWT token pour les requêtes authentifiées",
+  "endpoint": "POST /api/auth/login",
+  "url": "http://localhost:8080/api/auth/login",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "username": "admin",
+    "password": "admin123"
+  },
+  "expected_response": {
+    "token": "eyJhbGciOiJIUzI1NiJ9...",
+    "role": "ADMIN",
+    "username": "admin",
+    "employeId": 1
+  },
+  "notes": "Copier le token reçu et l'utiliser dans l'en-tête Authorization: Bearer {token}"
+}
