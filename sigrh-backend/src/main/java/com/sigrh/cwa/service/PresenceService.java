@@ -11,6 +11,16 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service de gestion des présences des employés.
+ * Permet de:
+ * - Enregistrer les présences/absences des employés
+ * - Générer des rapports mensuels de présence
+ * - Filtrer l'accès selon le rôle de l'utilisateur (Admin, RH, Manager, Employé)
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class PresenceService {
@@ -19,6 +29,13 @@ public class PresenceService {
     private final EmployeRepository employeRepo;
     private final SecurityHelper security;
 
+    /**
+     * Récupère toutes les présences (optionnellement filtrées par date).
+     * L'accès est restreint selon le rôle de l'utilisateur.
+     * 
+     * @param date Date de présence à filtrer (optionnelle)
+     * @return Liste des présences au format Map
+     */
     public List<Map<String, Object>> findAll(LocalDate date) {
         List<Presence> list = date != null
             ? presenceRepo.findByDate(date)
@@ -39,6 +56,14 @@ public class PresenceService {
             .map(this::toMap).collect(Collectors.toList());
     }
 
+    /**
+     * Récupère les présences d'un employé sur une période donnée.
+     * 
+     * @param employeId Identifiant de l'employé
+     * @param debut Date de début de la période
+     * @param fin Date de fin de la période
+     * @return Liste des présences de la période
+     */
     public List<Map<String, Object>> findByEmploye(Long employeId, LocalDate debut, LocalDate fin) {
         if (!security.canAccessEmploye(employeId))
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
@@ -46,6 +71,12 @@ public class PresenceService {
             .stream().map(this::toMap).collect(Collectors.toList());
     }
 
+    /**
+     * Enregistre un pointage de présence/absence pour un employé.
+     * 
+     * @param data Données contenant: employeId, date, statut, heureArrivee, heureDepart
+     * @return Données de la présence enregistrée
+     */
     @Transactional
     public Map<String, Object> pointer(Map<String, Object> data) {
         Long employeId = Long.valueOf(data.get("employeId").toString());
@@ -67,6 +98,15 @@ public class PresenceService {
         return toMap(presenceRepo.save(p));
     }
 
+    /**
+     * Génère un rapport mensuel de présence/absence pour un employé.
+     * Inclut le résumé et les détails des présences du mois.
+     * 
+     * @param employeId Identifiant de l'employé
+     * @param mois Mois à analyser (1-12)
+     * @param annee Année à analyser
+     * @return Rapport contenant présents, absents, retards et congés
+     */
     public Map<String, Object> getRapportMensuel(Long employeId, int mois, int annee) {
         if (!security.canAccessEmploye(employeId))
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
@@ -85,6 +125,12 @@ public class PresenceService {
         return rapport;
     }
 
+    /**
+     * Convertit une entité Presence en Map pour la sérialisation JSON.
+     * 
+     * @param p Entité Presence à convertir
+     * @return Map contenant les données de la présence
+     */
     private Map<String, Object> toMap(Presence p) {
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("id", p.getId());

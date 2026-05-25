@@ -9,6 +9,16 @@ import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service d'authentification et d'autorisation.
+ * Gère:
+ * - L'authentification des utilisateurs (username/password)
+ * - La génération des tokens JWT
+ * - Les informations de session
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -17,6 +27,13 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
 
+    /**
+     * Authentifie un utilisateur et génère un token JWT.
+     * 
+     * @param request Données de connexion (username et password)
+     * @return Réponse contenant le token JWT, le rôle et les infos utilisateur
+     * @throws AuthenticationException Si les identifiants sont invalides
+     */
     public AuthResponse login(AuthRequest request) {
         Authentication auth = authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())

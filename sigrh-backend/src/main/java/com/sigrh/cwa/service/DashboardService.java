@@ -10,6 +10,18 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service d'analyse et de génération du tableau de bord SIGRH.
+ * Fournit des statistiques RH globales:
+ * - Effectifs par statut et genre
+ * - Pyramide d'ages
+ * - Distribution par département
+ * - Statistiques de paie et matériel
+ * - Tendances d'abséntéisme et de congés
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
@@ -22,6 +34,11 @@ public class DashboardService {
     private final AlerteRHRepository alerteRepo;
     private final MaterielRepository materielRepo;
 
+    /**
+     * Génére un tableau de bord complet avec toutes les statistiques RH.
+     * 
+     * @return Map contenant tous les indicateurs du tableau de bord
+     */
     public Map<String, Object> getDashboard() {
         Map<String, Object> dashboard = new LinkedHashMap<>();
         dashboard.put("effectifs", getEffectifs());

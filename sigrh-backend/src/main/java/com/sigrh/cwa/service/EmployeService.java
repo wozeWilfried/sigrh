@@ -12,6 +12,17 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service de gestion des employés.
+ * Permet de:
+ * - Ajouter et modifier les données des employés
+ * - Rechercher les employés
+ * - Gérer les statuts (actif, inactif, suspendu)
+ * - Filtrer l'accès selon les permissions
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class EmployeService {
@@ -20,6 +31,11 @@ public class EmployeService {
     private final DepartementRepository deptRepo;
     private final SecurityHelper security;
 
+    /**
+     * Récupère tous les employés (accès filtré selon le rôle de l'utilisateur).
+     * 
+     * @return Liste des employés
+     */
     public List<EmployeDTO> findAll() {
         List<Employe> all = employeRepo.findAll();
         if (security.isAdminOrRh()) {
@@ -37,6 +53,13 @@ public class EmployeService {
             .map(this::toDTO).collect(Collectors.toList());
     }
 
+    /**
+     * Récupère un employé par son identifiant.
+     * Vérifie les droits d'accès.
+     * 
+     * @param id Identifiant de l'employé
+     * @return DTO de l'employé
+     */
     public EmployeDTO findById(Long id) {
         Employe emp = employeRepo.findById(id).orElseThrow();
         if (!security.canAccessEmploye(id))
@@ -44,18 +67,38 @@ public class EmployeService {
         return toDTO(emp);
     }
 
+    /**
+     * Recherche des employés selon différents critéres (nom, email, téléphone).
+     * Opération réservée aux administrateurs et RH.
+     * 
+     * @param query Texte de recherche
+     * @return Liste des employés correspondant à la recherche
+     */
     public List<EmployeDTO> search(String query) {
         if (!security.isAdminOrRh())
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
         return employeRepo.search(query).stream().map(this::toDTO).collect(Collectors.toList());
     }
 
+    /**
+     * Crée un nouvel employé dans le système.
+     * 
+     * @param dto Données du nouvel employé
+     * @return EmployeDTO avec l'identifiant assigné
+     */
     @Transactional
     public EmployeDTO create(EmployeDTO dto) {
         Employe e = toEntity(dto);
         return toDTO(employeRepo.save(e));
     }
 
+    /**
+     * Modifie les informations d'un employé existant.
+     * 
+     * @param id Identifiant de l'employé
+     * @param dto Nouvelles données de l'employé
+     * @return EmployeDTO mis à jour
+     */
     @Transactional
     public EmployeDTO update(Long id, EmployeDTO dto) {
         Employe existing = employeRepo.findById(id).orElseThrow();
@@ -72,6 +115,11 @@ public class EmployeService {
         return toDTO(employeRepo.save(existing));
     }
 
+    /**
+     * Supprime un employé du système.
+     * 
+     * @param id Identifiant de l'employé à supprimer
+     */
     @Transactional
     public void delete(Long id) { employeRepo.deleteById(id); }
 

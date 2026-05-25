@@ -11,6 +11,17 @@ import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.*;
 
+/**
+ * Service d'analyse prédictive et d'intelligence RH.
+ * Utilise des méthodes d'apprentissage machine pour:
+ * - Prédire le risque de départ (turnover) des employés
+ * - Détecter l'abséntéisme anormal
+ * - Prévoir l'évolution de la masse salariale
+ * - Générer des alertes RH automatisées
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class AnalysePredictiveService {

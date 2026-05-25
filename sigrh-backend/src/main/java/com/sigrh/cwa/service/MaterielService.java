@@ -10,6 +10,17 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service de gestion du matériel et des équipements.
+ * Permet de:
+ * - Gérer les catégories de matériel
+ * - Inventorier l'(équipement informatique et autres matériels
+ * - Attribuer le matériel aux employés
+ * - Suivre les retours et état du matériel
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class MaterielService {

@@ -12,6 +12,17 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service de gestion des fiches de paie et bulletins de salaire.
+ * Permet de:
+ * - Générer les fiches de paie mensuelles
+ * - Calculer les salaires et retenues
+ * - Consulter l'historique de paie
+ * - Filtrer l'accès selon les droits de l'utilisateur
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class FichePaieService {

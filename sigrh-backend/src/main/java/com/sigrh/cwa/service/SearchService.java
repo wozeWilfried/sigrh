@@ -7,6 +7,16 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service de recherche globale multi-critères.
+ * Permet de:
+ * - Rechercher dans tous les données de l'application
+ * - Filtrer par type d'entité (employés, départements, congés, etc.)
+ * - Paginer les résultats
+ * 
+ * @author Équipe SIGRH
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class SearchService {
