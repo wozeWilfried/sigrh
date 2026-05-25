@@ -1,7 +1,7 @@
 package com.sigrh.cwa.repository;
 
 import com.sigrh.cwa.entity.*;
-import com.sigrh.cwa.enum.StatutConge;
+import com.sigrh.cwa.enums.StatutConge;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.stereotype.Repository;
 import java.util.List;

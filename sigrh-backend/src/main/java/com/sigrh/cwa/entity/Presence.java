@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import com.sigrh.cwa.enum.StatutPresence;
+import com.sigrh.cwa.enums.StatutPresence;
 
 @Entity
 @Table(name = "presences")

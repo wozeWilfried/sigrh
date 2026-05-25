@@ -3,8 +3,8 @@ package com.sigrh.cwa.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
-import com.sigrh.cwa.enum.TypeConge;
-import com.sigrh.cwa.enum.StatutConge;
+import com.sigrh.cwa.enums.TypeConge;
+import com.sigrh.cwa.enums.StatutConge;
 
 @Entity
 @Table(name = "conges")

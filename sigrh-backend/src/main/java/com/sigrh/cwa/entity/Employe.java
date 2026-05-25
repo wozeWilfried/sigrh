@@ -3,8 +3,8 @@ package com.sigrh.cwa.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
-import com.sigrh.cwa.enum.Genre;
-import com.sigrh.cwa.enum.StatutEmploye;
+import com.sigrh.cwa.enums.Genre;
+import com.sigrh.cwa.enums.StatutEmploye;
 
 @Entity
 @Table(name = "employes")

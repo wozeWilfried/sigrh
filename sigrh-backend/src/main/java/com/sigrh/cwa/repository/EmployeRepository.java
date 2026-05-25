@@ -1,7 +1,7 @@
 package com.sigrh.cwa.repository;
 
 import com.sigrh.cwa.entity.*;
-import com.sigrh.cwa.enum.StatutEmploye;
+import com.sigrh.cwa.enums.StatutEmploye;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;

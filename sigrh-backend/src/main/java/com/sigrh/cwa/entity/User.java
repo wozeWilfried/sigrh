@@ -3,7 +3,7 @@ package com.sigrh.cwa.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Set;
-import com.sigrh.cwa.enum.Role;
+import com.sigrh.cwa.enums.Role;
 
 @Entity
 @Table(name = "users")
