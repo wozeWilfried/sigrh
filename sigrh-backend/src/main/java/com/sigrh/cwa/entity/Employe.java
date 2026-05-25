@@ -1,5 +1,6 @@
 package com.sigrh.cwa.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -33,10 +34,12 @@ public class Employe {
 
     @ManyToOne
     @JoinColumn(name = "departement_id")
+    @JsonIgnoreProperties("employes")
     private Departement departement;
 
     @OneToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties("employe")
     private User user;
 
     @Enumerated(EnumType.STRING)

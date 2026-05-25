@@ -1,5 +1,6 @@
 package com.sigrh.cwa.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -16,6 +17,7 @@ public class Conge {
 
     @ManyToOne
     @JoinColumn(name = "employe_id")
+    @JsonIgnoreProperties({"fichesPaie", "presences", "conges"})
     private Employe employe;
 
     @Enumerated(EnumType.STRING)

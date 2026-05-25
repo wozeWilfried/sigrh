@@ -1,5 +1,6 @@
 package com.sigrh.cwa.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.Set;
@@ -28,5 +29,6 @@ public class User {
     private boolean active = true;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnoreProperties("user")
     private Employe employe;
 }

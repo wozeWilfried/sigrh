@@ -1,5 +1,6 @@
 package com.sigrh.cwa.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
@@ -19,5 +20,6 @@ public class Departement {
     private String responsable;
 
     @OneToMany(mappedBy = "departement")
+    @JsonIgnoreProperties({"departement", "user"})
     private List<Employe> employes;
 }
