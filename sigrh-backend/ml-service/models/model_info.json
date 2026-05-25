@@ -1,0 +1,69 @@
+{
+  "loaded": true,
+  "version": "20260525_143856",
+  "nFeatures": 8,
+  "featureNames": [
+    "age",
+    "anciennete_mois",
+    "salaire",
+    "genre",
+    "nb_absences_3mois",
+    "nb_retards_1mois",
+    "nb_conges_12mois",
+    "statut_actif"
+  ],
+  "accuracy": 0.93,
+  "auc": 0.8863,
+  "trainedAt": "2026-05-25T14:38:56.343036",
+  "nSamples": 500,
+  "testSamples": 100,
+  "params": {
+    "n_estimators": 200,
+    "max_depth": 6,
+    "learning_rate": 0.08,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "min_child_weight": 3,
+    "gamma": 0.1,
+    "reg_alpha": 0.1,
+    "reg_lambda": 1.0,
+    "scale_pos_weight": 17.181818181818183,
+    "random_state": 42,
+    "eval_metric": "auc",
+    "use_label_encoder": false
+  },
+  "featureImportance": [
+    {
+      "feature": "anciennete_mois",
+      "importance": 0.3359
+    },
+    {
+      "feature": "statut_actif",
+      "importance": 0.1512
+    },
+    {
+      "feature": "nb_absences_3mois",
+      "importance": 0.1285
+    },
+    {
+      "feature": "age",
+      "importance": 0.0918
+    },
+    {
+      "feature": "genre",
+      "importance": 0.0821
+    },
+    {
+      "feature": "nb_conges_12mois",
+      "importance": 0.0776
+    },
+    {
+      "feature": "salaire",
+      "importance": 0.0768
+    },
+    {
+      "feature": "nb_retards_1mois",
+      "importance": 0.0562
+    }
+  ]
+}
