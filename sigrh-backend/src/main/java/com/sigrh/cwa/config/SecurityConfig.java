@@ -3,6 +3,7 @@ package com.sigrh.cwa.config;
 import com.sigrh.cwa.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.*;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.*;
 import org.springframework.security.config.annotation.authentication.configuration.*;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,7 +26,31 @@ public class SecurityConfig {
             .cors(cors -> cors.disable())
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/webjars/**", "/v3/api-docs/**").permitAll()
+                // ── PUBLIQUE ──
+                .requestMatchers("/api/auth/**", "/api-docs/**", "/swagger-ui/**",
+                    "/swagger-ui.html", "/webjars/**", "/v3/api-docs/**").permitAll()
+
+                // ── ADMIN UNIQUEMENT (règles spécifiques AVANT les règles générales) ──
+                .requestMatchers(HttpMethod.DELETE, "/api/departements/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/employes/*").hasRole("ADMIN")
+
+                // ── ADMIN + RH UNIQUEMENT ──
+                .requestMatchers("/api/departements/**").hasAnyRole("ADMIN", "RH")
+                .requestMatchers("/api/materiel/**").hasAnyRole("ADMIN", "RH")
+                .requestMatchers("/api/dashboard", "/api/search").hasAnyRole("ADMIN", "RH")
+                .requestMatchers("/api/analyse/**").hasAnyRole("ADMIN", "RH")
+                .requestMatchers(HttpMethod.POST, "/api/employes").hasAnyRole("ADMIN", "RH")
+                .requestMatchers(HttpMethod.PUT, "/api/employes/*").hasAnyRole("ADMIN", "RH")
+                .requestMatchers(HttpMethod.POST, "/api/paie/generer").hasAnyRole("ADMIN", "RH")
+                .requestMatchers(HttpMethod.PUT, "/api/paie/*/valider").hasAnyRole("ADMIN", "RH")
+                .requestMatchers(HttpMethod.PUT, "/api/conges/*/valider").hasAnyRole("ADMIN", "RH")
+
+                // ── AUTHENTIFIÉ (contrôle d'accès affiné dans les services) ──
+                .requestMatchers("/api/employes/**").authenticated()
+                .requestMatchers("/api/conges/**").authenticated()
+                .requestMatchers("/api/presences/**").authenticated()
+                .requestMatchers("/api/paie/**").authenticated()
+
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
