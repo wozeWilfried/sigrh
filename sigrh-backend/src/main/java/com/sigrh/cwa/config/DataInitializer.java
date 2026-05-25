@@ -46,19 +46,36 @@ public class DataInitializer implements CommandLineRunner {
                 .nom("Comptabilité").description("Département Comptabilité").build());
 
             // Administrateur
+            User adminUser = createUser("admin", "admin123", "admin@sigrh.com", Role.ADMIN);
+            createEmploye(adminUser, "EMP001", "Admin", "Système", "Directeur", Genre.MASCULIN,
+                2000000.0, StatutEmploye.ACTIF, rh, "1985-03-15", "2010-01-01");
 
             // Ressources Humaines
+            User rhUser = createUser("rh", "rh123", "rh@sigrh.com", Role.RH);
+            createEmploye(rhUser, "EMP002", "Marie", "Diallo", "Responsable RH", Genre.FEMININ,
+                1200000.0, StatutEmploye.ACTIF, rh, "1990-07-22", "2015-03-01");
 
             // Manager
+            User mgrUser = createUser("manager", "manager123", "manager@sigrh.com", Role.MANAGER);
+            createEmploye(mgrUser, "EMP003", "Jean", "Koné", "Chef de Projet", Genre.MASCULIN,
+                1500000.0, StatutEmploye.ACTIF, it, "1988-11-10", "2012-06-15");
 
             // Employé (IT)
+            User empUser = createUser("employe", "employe123", "employe@sigrh.com", Role.EMPLOYE);
+            createEmploye(empUser, "EMP004", "Fatou", "Sy", "Développeur", Genre.FEMININ,
+                800000.0, StatutEmploye.ACTIF, it, "1995-04-05", "2022-09-01");
 
             // Employé (Comptabilité)
             User empUser2 = createUser("employe2", "employe123", "employe2@sigrh.com", Role.EMPLOYE);
             createEmploye(empUser2, "EMP005", "Ousmane", "Cissé", "Comptable", Genre.MASCULIN,
                 450000.0, StatutEmploye.ACTIF, compta, "1992-02-18", "2020-09-01");
 
-            System.out.println("✅ Données créées : admin/admin123, rh/rh123, manager/manager123, employe/employe123");
+            // Secrétaire
+            User secUser = createUser("secretaire", "secretaire123", "secretaire@sigrh.com", Role.SECRETAIRE);
+            createEmploye(secUser, "EMP006", "Aminata", "Ndiaye", "Secrétaire", Genre.FEMININ,
+                500000.0, StatutEmploye.ACTIF, rh, "1993-08-12", "2021-03-01");
+
+            System.out.println("✅ Données créées : admin/admin123, rh/rh123, manager/manager123, employe/employe123, secretaire/secretaire123");
         }
     }
 
