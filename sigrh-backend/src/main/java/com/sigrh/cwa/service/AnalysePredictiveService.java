@@ -225,19 +225,39 @@ public class AnalysePredictiveService {
         List<AlerteRH> alertes = nonTraiteesSeulement
             ? alerteRepo.findByTraitee(false)
             : alerteRepo.findAll();
-        return alertes.stream().map(a -> {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("id",          a.getId());
-            m.put("employe",     a.getEmploye().getNom() + " " + a.getEmploye().getPrenom());
-            m.put("employeId",   a.getEmploye().getId());
-            m.put("type",        a.getType().name());
-            m.put("niveau",      a.getNiveau().name());
-            m.put("message",     a.getMessage());
-            m.put("scoreRisque", Math.round(a.getScoreRisque() * 100) + "%");
-            m.put("dateAlerte",  a.getDateAlerte());
-            m.put("traitee",     a.isTraitee());
-            return m;
-        }).collect(Collectors.toList());
+        return alertes.stream().map(this::mapAlerte).collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getAlertesByTraitee(boolean traitee) {
+        return alerteRepo.findByTraitee(traitee).stream().map(this::mapAlerte).collect(Collectors.toList());
+    }
+
+    public long countAlertesByStatut(String statut) {
+        if (statut == null || statut.isBlank()) {
+            return alerteRepo.count();
+        }
+        if ("ACTIVE".equalsIgnoreCase(statut)) {
+            return alerteRepo.countByTraitee(false);
+        }
+        if ("TRAITEE".equalsIgnoreCase(statut)) {
+            return alerteRepo.countByTraitee(true);
+        }
+        return alerteRepo.count();
+    }
+
+    private Map<String, Object> mapAlerte(AlerteRH a) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id",          a.getId());
+        m.put("employe",     a.getEmploye().getNom() + " " + a.getEmploye().getPrenom());
+        m.put("employeId",   a.getEmploye().getId());
+        m.put("departement", a.getEmploye().getDepartement() != null ? a.getEmploye().getDepartement().getNom() : "");
+        m.put("type",        a.getType().name());
+        m.put("niveau",      a.getNiveau().name());
+        m.put("message",     a.getMessage());
+        m.put("scoreRisque", Math.round(a.getScoreRisque() * 100) + "%");
+        m.put("dateAlerte",  a.getDateAlerte());
+        m.put("traitee",     a.isTraitee());
+        return m;
     }
 
     public Map<String, Object> marquerAlerteTraitee(Long alerteId) {
@@ -245,6 +265,13 @@ public class AnalysePredictiveService {
         alerte.setTraitee(true);
         alerteRepo.save(alerte);
         return Map.of("message", "Alerte marquée comme traitée", "id", alerteId);
+    }
+
+    public Map<String, Object> marquerToutesAlertesTraitees() {
+        List<AlerteRH> alertes = alerteRepo.findByTraitee(false);
+        alertes.forEach(alerte -> alerte.setTraitee(true));
+        alerteRepo.saveAll(alertes);
+        return Map.of("message", "Toutes les alertes ont été marquées comme traitées", "updated", alertes.size());
     }
 
     // Générer les alertes pour tous les employés actifs

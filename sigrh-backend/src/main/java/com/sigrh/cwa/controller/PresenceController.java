@@ -52,6 +52,33 @@ public class PresenceController {
         return ResponseEntity.ok(presenceService.findByEmploye(id, debut, fin));
     }
 
+    @GetMapping("/historique")
+    public ResponseEntity<Map<String, Object>> getHistory(
+            @RequestParam(required = false) String employeeId,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(presenceService.getAttendanceHistory(parseLong(employeeId), department, startDate, endDate));
+    }
+
+    @GetMapping("/statistiques")
+    public ResponseEntity<Map<String, Object>> getStatistics(
+            @RequestParam(required = false) String employeeId,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(presenceService.getAttendanceStatistics(parseLong(employeeId), department, startDate, endDate));
+    }
+
+    private Long parseLong(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Long.valueOf(value);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
     /**
      * Enregistre un pointage (présence, absence, retard).
      * 
