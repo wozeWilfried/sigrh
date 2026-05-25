@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
   BarChart3,
@@ -17,6 +17,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react'
+import { getPendingCount } from '../../api/leaves'
 
 const adminNavigation = [
   {
@@ -37,7 +38,14 @@ const adminNavigation = [
           { label: 'Ajouter un employé', path: '/admin/employes/ajouter' },
         ],
       },
-      { label: 'Congés', path: '/admin/conges', icon: CalendarCheck, badge: 3 },
+      {
+        label: 'Congés',
+        icon: CalendarCheck,
+        badgeKey: 'pendingLeaves',
+        children: [
+          { label: 'Gestion des congés', path: '/conges' },
+        ],
+      },
       {
         label: 'Présences',
         icon: ClipboardCheck,
@@ -93,6 +101,21 @@ function getInitialOpenMenus(pathname) {
 export default function Sidebar({ collapsed, onToggle }) {
   const location = useLocation()
   const [openMenus, setOpenMenus] = useState(() => getInitialOpenMenus(location.pathname))
+  const [pendingLeaves, setPendingLeaves] = useState(0)
+
+  useEffect(() => {
+    let ignore = false
+    getPendingCount()
+      .then((count) => {
+        if (!ignore) setPendingLeaves(count)
+      })
+      .catch(() => {
+        if (!ignore) setPendingLeaves(0)
+      })
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   function toggleMenu(label) {
     setOpenMenus((current) => ({ ...current, [label]: !current[label] }))
@@ -126,9 +149,14 @@ export default function Sidebar({ collapsed, onToggle }) {
                         currentPath={location.pathname}
                         isOpen={Boolean(openMenus[item.label])}
                         onToggle={() => toggleMenu(item.label)}
+                        badgeValue={item.badgeKey === 'pendingLeaves' ? pendingLeaves : item.badge}
                       />
                     ) : (
-                      <SidebarLink item={item} collapsed={collapsed} />
+                      <SidebarLink
+                        item={item}
+                        collapsed={collapsed}
+                        badgeValue={item.badgeKey === 'pendingLeaves' ? pendingLeaves : item.badge}
+                      />
                     )}
                   </li>
                 ))}
@@ -171,7 +199,7 @@ function SidebarHeader({ collapsed }) {
   )
 }
 
-function SidebarLink({ item, collapsed }) {
+function SidebarLink({ item, collapsed, badgeValue }) {
   return (
     <NavLink
       to={item.path}
@@ -196,18 +224,18 @@ function SidebarLink({ item, collapsed }) {
           {!collapsed && (
             <>
               <span className="truncate">{item.label}</span>
-              <Badge value={item.badge} active={isActive} />
+              <Badge value={badgeValue} active={isActive} />
             </>
           )}
 
-          {collapsed && <CollapsedBadge value={item.badge} />}
+          {collapsed && <CollapsedBadge value={badgeValue} />}
         </>
       )}
     </NavLink>
   )
 }
 
-function SidebarGroup({ item, collapsed, currentPath, isOpen, onToggle }) {
+function SidebarGroup({ item, collapsed, currentPath, isOpen, onToggle, badgeValue }) {
   const isActive = item.children.some((child) => currentPath.startsWith(child.path))
 
   return (
@@ -231,6 +259,7 @@ function SidebarGroup({ item, collapsed, currentPath, isOpen, onToggle }) {
         {!collapsed && (
           <>
             <span className="truncate">{item.label}</span>
+            <Badge value={badgeValue} active={isActive} />
             <ChevronDown
               size={16}
               strokeWidth={2}
@@ -292,7 +321,7 @@ function SidebarFooter({ collapsed, onToggle }) {
 }
 
 function Badge({ value, active }) {
-  if (value == null) return null
+  if (value == null || value === 0) return null
 
   return (
     <span
@@ -306,7 +335,7 @@ function Badge({ value, active }) {
 }
 
 function CollapsedBadge({ value }) {
-  if (value == null) return null
+  if (value == null || value === 0) return null
 
   return (
     <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold leading-none text-white">

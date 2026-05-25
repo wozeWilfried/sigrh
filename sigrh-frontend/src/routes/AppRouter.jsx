@@ -114,6 +114,14 @@ export default function AppRouter() {
         }
       />
       <Route
+        path="/conges"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
+            <Conges />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin/presences"
         element={
           <ProtectedRoute roles={['ADMIN']}>

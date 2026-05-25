@@ -10,11 +10,13 @@ import {
   User,
 } from 'lucide-react'
 import useAuth from '../../hooks/useAuth'
+import { getPendingCount } from '../../api/leaves'
 
 export default function Navbar({ onMobileToggle }) {
   const { user, logout, roleDisplayName } = useAuth()
   const navigate = useNavigate()
   const [showDropdown, setShowDropdown] = useState(false)
+  const [pendingLeaves, setPendingLeaves] = useState(0)
   const dropdownRef = useRef(null)
 
   useEffect(() => {
@@ -26,6 +28,22 @@ export default function Navbar({ onMobileToggle }) {
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    let ignore = false
+
+    getPendingCount()
+      .then((count) => {
+        if (!ignore) setPendingLeaves(count)
+      })
+      .catch(() => {
+        if (!ignore) setPendingLeaves(0)
+      })
+
+    return () => {
+      ignore = true
+    }
   }, [])
 
   function handleLogout() {
@@ -74,9 +92,11 @@ export default function Navbar({ onMobileToggle }) {
             aria-label="Notifications"
           >
             <Bell size={20} strokeWidth={1.9} />
-            <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white">
-              3
-            </span>
+            {pendingLeaves > 0 && (
+              <span className="absolute right-2 top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white">
+                {pendingLeaves}
+              </span>
+            )}
           </button>
 
           <div className="relative" ref={dropdownRef}>
