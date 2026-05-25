@@ -14,7 +14,11 @@ public class SearchController {
     private final SearchService searchService;
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> search(@RequestParam String q) {
-        return ResponseEntity.ok(searchService.searchGlobal(q));
+    public ResponseEntity<Map<String, Object>> search(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(required = false) String type) {
+        return ResponseEntity.ok(searchService.searchGlobal(q, page, size, type));
     }
 }

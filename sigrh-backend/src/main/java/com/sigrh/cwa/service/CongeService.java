@@ -4,8 +4,13 @@ import com.sigrh.cwa.dto.CongeDTO;
 import com.sigrh.cwa.entity.*;
 import com.sigrh.cwa.repository.*;
 import com.sigrh.cwa.enums.StatutConge;
+import com.sigrh.cwa.enums.TypeConge;
+import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -15,74 +20,87 @@ public class CongeService {
 
     private final CongeRepository congeRepo;
     private final EmployeRepository employeRepo;
+    private final SecurityHelper security;
 
     public List<CongeDTO> findAll() {
-        return congeRepo.findAll().stream().map(this::toDTO).collect(Collectors.toList());
+        List<Conge> all = congeRepo.findAll();
+        if (security.isAdminOrRh()) {
+            return all.stream().map(this::toDTO).collect(Collectors.toList());
+        }
+        if (security.isManager()) {
+            Long deptId = security.getCurrentDepartementId();
+            return all.stream()
+                .filter(c -> c.getEmploye() != null && c.getEmploye().getDepartement() != null
+                    && c.getEmploye().getDepartement().getId().equals(deptId))
+                .map(this::toDTO).collect(Collectors.toList());
+        }
+        // Employé : accès limité à ses propres congés
+        return all.stream()
+            .filter(c -> c.getEmploye() != null && c.getEmploye().getId().equals(security.getCurrentEmployeId()))
+            .map(this::toDTO).collect(Collectors.toList());
     }
 
-    public CongeDTO findById(Long id) {
-        return toDTO(congeRepo.findById(id).orElseThrow());
-    }
-
-    public List<CongeDTO> findByEmployeId(Long employeId) {
+    public List<CongeDTO> findByEmploye(Long employeId) {
+        if (!security.canAccessEmploye(employeId))
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
         return congeRepo.findByEmployeId(employeId).stream().map(this::toDTO).collect(Collectors.toList());
     }
 
+    public List<CongeDTO> findByStatut(String statut) {
+        if (!security.isAdminOrRh())
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+        return congeRepo.findByStatut(StatutConge.valueOf(statut)).stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    @Transactional
     public CongeDTO create(CongeDTO dto) {
-        Conge c = toEntity(dto);
-        return toDTO(congeRepo.save(c));
+        Employe employe = employeRepo.findById(dto.getEmployeId()).orElseThrow();
+        if (!security.canAccessEmploye(dto.getEmployeId()))
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+        long jours = ChronoUnit.DAYS.between(dto.getDateDebut(), dto.getDateFin()) + 1;
+
+        Conge conge = Conge.builder()
+            .employe(employe)
+            .type(TypeConge.valueOf(dto.getType()))
+            .dateDebut(dto.getDateDebut())
+            .dateFin(dto.getDateFin())
+            .nombreJours((int) jours)
+            .motif(dto.getMotif())
+            .statut(StatutConge.EN_ATTENTE)
+            .dateCreation(LocalDate.now())
+            .build();
+        return toDTO(congeRepo.save(conge));
     }
 
-    public CongeDTO update(Long id, CongeDTO dto) {
-        Conge existing = congeRepo.findById(id).orElseThrow();
-        existing.setType(com.sigrh.cwa.enums.TypeConge.valueOf(dto.getType()));
-        existing.setDateDebut(dto.getDateDebut());
-        existing.setDateFin(dto.getDateFin());
-        existing.setNombreJours(dto.getNombreJours());
-        existing.setMotif(dto.getMotif());
-        existing.setStatut(StatutConge.valueOf(dto.getStatut()));
-        existing.setCommentaireRH(dto.getCommentaireRH());
-        return toDTO(congeRepo.save(existing));
+    @Transactional
+    public CongeDTO valider(Long id, String statut, String commentaire) {
+        Conge conge = congeRepo.findById(id).orElseThrow();
+        conge.setStatut(StatutConge.valueOf(statut));
+        conge.setCommentaireRH(commentaire);
+        return toDTO(congeRepo.save(conge));
     }
 
+    @Transactional
     public void delete(Long id) {
+        Conge conge = congeRepo.findById(id).orElseThrow();
+        if (!security.isAdminOrRh()
+            && !security.isSelf(conge.getEmploye() != null ? conge.getEmploye().getId() : null))
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
         congeRepo.deleteById(id);
-    }
-
-    public CongeDTO validerConge(Long id, CongeDTO dto) {
-        Conge existing = congeRepo.findById(id).orElseThrow();
-        existing.setStatut(StatutConge.valueOf(dto.getStatut()));
-        existing.setCommentaireRH(dto.getCommentaireRH());
-        return toDTO(congeRepo.save(existing));
     }
 
     private CongeDTO toDTO(Conge c) {
         return CongeDTO.builder()
             .id(c.getId())
-            .employeId(c.getEmploye() != null ? c.getEmploye().getId() : null)
-            .employeNom(c.getEmploye() != null ? c.getEmploye().getNom() + " " + c.getEmploye().getPrenom() : null)
-            .type(c.getType() != null ? c.getType().name() : null)
+            .employeId(c.getEmploye().getId())
+            .employeNom(c.getEmploye().getNom() + " " + c.getEmploye().getPrenom())
+            .type(c.getType().name())
             .dateDebut(c.getDateDebut())
             .dateFin(c.getDateFin())
             .nombreJours(c.getNombreJours())
             .motif(c.getMotif())
-            .statut(c.getStatut() != null ? c.getStatut().name() : null)
+            .statut(c.getStatut().name())
             .commentaireRH(c.getCommentaireRH())
             .build();
-    }
-
-    private Conge toEntity(CongeDTO dto) {
-        Conge c = new Conge();
-        if (dto.getEmployeId() != null) {
-            c.setEmploye(employeRepo.findById(dto.getEmployeId()).orElseThrow());
-        }
-        c.setType(com.sigrh.cwa.enums.TypeConge.valueOf(dto.getType()));
-        c.setDateDebut(dto.getDateDebut());
-        c.setDateFin(dto.getDateFin());
-        c.setNombreJours(dto.getNombreJours());
-        c.setMotif(dto.getMotif());
-        c.setStatut(StatutConge.valueOf(dto.getStatut()));
-        c.setCommentaireRH(dto.getCommentaireRH());
-        return c;
     }
 }

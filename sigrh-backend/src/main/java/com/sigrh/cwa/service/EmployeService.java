@@ -5,8 +5,10 @@ import com.sigrh.cwa.entity.*;
 import com.sigrh.cwa.repository.*;
 import com.sigrh.cwa.enums.Genre;
 import com.sigrh.cwa.enums.StatutEmploye;
+import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,24 +18,45 @@ public class EmployeService {
 
     private final EmployeRepository employeRepo;
     private final DepartementRepository deptRepo;
+    private final SecurityHelper security;
 
     public List<EmployeDTO> findAll() {
-        return employeRepo.findAll().stream().map(this::toDTO).collect(Collectors.toList());
+        List<Employe> all = employeRepo.findAll();
+        if (security.isAdminOrRh()) {
+            return all.stream().map(this::toDTO).collect(Collectors.toList());
+        }
+        if (security.isManager()) {
+            Long deptId = security.getCurrentDepartementId();
+            return all.stream()
+                .filter(e -> e.getDepartement() != null && e.getDepartement().getId().equals(deptId))
+                .map(this::toDTO).collect(Collectors.toList());
+        }
+        // Employé : accès limité à son propre profil
+        return all.stream()
+            .filter(e -> e.getId().equals(security.getCurrentEmployeId()))
+            .map(this::toDTO).collect(Collectors.toList());
     }
 
     public EmployeDTO findById(Long id) {
-        return toDTO(employeRepo.findById(id).orElseThrow());
+        Employe emp = employeRepo.findById(id).orElseThrow();
+        if (!security.canAccessEmploye(id))
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+        return toDTO(emp);
     }
 
     public List<EmployeDTO> search(String query) {
+        if (!security.isAdminOrRh())
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
         return employeRepo.search(query).stream().map(this::toDTO).collect(Collectors.toList());
     }
 
+    @Transactional
     public EmployeDTO create(EmployeDTO dto) {
         Employe e = toEntity(dto);
         return toDTO(employeRepo.save(e));
     }
 
+    @Transactional
     public EmployeDTO update(Long id, EmployeDTO dto) {
         Employe existing = employeRepo.findById(id).orElseThrow();
         existing.setNom(dto.getNom());
@@ -49,6 +72,7 @@ public class EmployeService {
         return toDTO(employeRepo.save(existing));
     }
 
+    @Transactional
     public void delete(Long id) { employeRepo.deleteById(id); }
 
     private EmployeDTO toDTO(Employe e) {

@@ -1,42 +1,37 @@
 package com.sigrh.cwa.controller;
 
-import com.sigrh.cwa.entity.Departement;
 import com.sigrh.cwa.service.DepartementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/departements")
 @RequiredArgsConstructor
 public class DepartementController {
 
-    private final DepartementService departementService;
+    private final DepartementService deptService;
 
     @GetMapping
-    public ResponseEntity<List<Departement>> findAll() {
-        return ResponseEntity.ok(departementService.findAll());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Departement> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(departementService.findById(id));
+    public ResponseEntity<List<Map<String, Object>>> findAll() {
+        return ResponseEntity.ok(deptService.findAll());
     }
 
     @PostMapping
-    public ResponseEntity<Departement> create(@RequestBody Departement departement) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(departementService.create(departement));
+    public ResponseEntity<Map<String, Object>> create(@RequestBody Map<String, String> data) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(deptService.create(data));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Departement> update(@PathVariable Long id, @RequestBody Departement departement) {
-        return ResponseEntity.ok(departementService.update(id, departement));
+    public ResponseEntity<Map<String, Object>> update(
+            @PathVariable Long id, @RequestBody Map<String, String> data) {
+        return ResponseEntity.ok(deptService.update(id, data));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        departementService.delete(id);
+        deptService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

@@ -1,52 +1,35 @@
 package com.sigrh.cwa.controller;
 
-import com.sigrh.cwa.entity.FichePaie;
 import com.sigrh.cwa.service.FichePaieService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+import java.util.*;
 
 @RestController
-@RequestMapping("/api/fiches-paie")
+@RequestMapping("/api/paie")
 @RequiredArgsConstructor
 public class FichePaieController {
 
-    private final FichePaieService fichePaieService;
+    private final FichePaieService paieService;
 
     @GetMapping
-    public ResponseEntity<List<FichePaie>> findAll() {
-        return ResponseEntity.ok(fichePaieService.findAll());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<FichePaie> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(fichePaieService.findById(id));
-    }
-
-    @GetMapping("/employe/{employeId}")
-    public ResponseEntity<List<FichePaie>> findByEmployeId(@PathVariable Long employeId) {
-        return ResponseEntity.ok(fichePaieService.findByEmployeId(employeId));
-    }
-
-    @PostMapping
-    public ResponseEntity<FichePaie> create(@RequestBody FichePaie fichePaie) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(fichePaieService.create(fichePaie));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<FichePaie> update(@PathVariable Long id, @RequestBody FichePaie fichePaie) {
-        return ResponseEntity.ok(fichePaieService.update(id, fichePaie));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        fichePaieService.delete(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<List<Map<String, Object>>> findAll(
+            @RequestParam(required = false) Long employeId) {
+        if (employeId != null) return ResponseEntity.ok(paieService.findByEmployeId(employeId));
+        return ResponseEntity.ok(paieService.findAll());
     }
 
     @PostMapping("/generer")
-    public ResponseEntity<FichePaie> generer(@RequestParam Long employeId, @RequestParam int mois, @RequestParam int annee) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(fichePaieService.genererFichePaie(employeId, mois, annee));
+    public ResponseEntity<Map<String, Object>> generer(@RequestBody Map<String, Object> body) {
+        Long employeId = Long.valueOf(body.get("employeId").toString());
+        int mois  = Integer.parseInt(body.get("mois").toString());
+        int annee = Integer.parseInt(body.get("annee").toString());
+        return ResponseEntity.status(HttpStatus.CREATED).body(paieService.generer(employeId, mois, annee));
+    }
+
+    @PutMapping("/{id}/valider")
+    public ResponseEntity<Map<String, Object>> valider(@PathVariable Long id) {
+        return ResponseEntity.ok(paieService.valider(id));
     }
 }

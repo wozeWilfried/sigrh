@@ -4,10 +4,13 @@ import com.sigrh.cwa.entity.FichePaie;
 import com.sigrh.cwa.entity.Employe;
 import com.sigrh.cwa.repository.FichePaieRepository;
 import com.sigrh.cwa.repository.EmployeRepository;
+import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -15,59 +18,79 @@ public class FichePaieService {
 
     private final FichePaieRepository fichePaieRepo;
     private final EmployeRepository employeRepo;
+    private final SecurityHelper security;
 
-    public List<FichePaie> findAll() {
-        return fichePaieRepo.findAll();
+    public List<Map<String, Object>> findAll() {
+        List<FichePaie> all = fichePaieRepo.findAll();
+        if (security.isAdminOrRh()) {
+            return all.stream().map(this::toMap).collect(Collectors.toList());
+        }
+        if (security.isManager()) {
+            Long deptId = security.getCurrentDepartementId();
+            return all.stream()
+                .filter(f -> f.getEmploye() != null && f.getEmploye().getDepartement() != null
+                    && f.getEmploye().getDepartement().getId().equals(deptId))
+                .map(this::toMap).collect(Collectors.toList());
+        }
+        return all.stream()
+            .filter(f -> f.getEmploye() != null && f.getEmploye().getId().equals(security.getCurrentEmployeId()))
+            .map(this::toMap).collect(Collectors.toList());
     }
 
-    public FichePaie findById(Long id) {
-        return fichePaieRepo.findById(id).orElseThrow();
+    public List<Map<String, Object>> findByEmployeId(Long employeId) {
+        if (!security.canAccessEmploye(employeId))
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+        return fichePaieRepo.findByEmployeId(employeId).stream().map(this::toMap).collect(Collectors.toList());
     }
 
-    public List<FichePaie> findByEmployeId(Long employeId) {
-        return fichePaieRepo.findByEmployeId(employeId);
+    @Transactional
+    public Map<String, Object> generer(Long employeId, int mois, int annee) {
+        fichePaieRepo.findByEmployeIdAndMoisAndAnnee(employeId, mois, annee)
+            .ifPresent(f -> { throw new IllegalStateException("Fiche déjà générée pour ce mois"); });
+        Employe emp = employeRepo.findById(employeId).orElseThrow();
+        double brut = emp.getSalaire() != null ? emp.getSalaire() : 0;
+        double cnps = brut * 0.042;
+        double irpp = calculerIRPP(brut);
+        double net  = brut - cnps - irpp;
+        FichePaie fiche = FichePaie.builder()
+            .employe(emp).mois(mois).annee(annee)
+            .salaireBrut(brut).cotisationsCNPS(cnps).impotIRPP(irpp)
+            .autresRetenues(0.0).primes(0.0).salaireNet(net)
+            .dateGeneration(LocalDate.now()).valide(false).build();
+        return toMap(fichePaieRepo.save(fiche));
     }
 
-    public FichePaie create(FichePaie fichePaie) {
-        return fichePaieRepo.save(fichePaie);
+    @Transactional
+    public Map<String, Object> valider(Long id) {
+        FichePaie fiche = fichePaieRepo.findById(id).orElseThrow();
+        fiche.setValide(true);
+        return toMap(fichePaieRepo.save(fiche));
     }
 
-    public FichePaie update(Long id, FichePaie fichePaie) {
-        FichePaie existing = fichePaieRepo.findById(id).orElseThrow();
-        existing.setMois(fichePaie.getMois());
-        existing.setAnnee(fichePaie.getAnnee());
-        existing.setSalaireBrut(fichePaie.getSalaireBrut());
-        existing.setCotisationsCNPS(fichePaie.getCotisationsCNPS());
-        existing.setImpotIRPP(fichePaie.getImpotIRPP());
-        existing.setAutresRetenues(fichePaie.getAutresRetenues());
-        existing.setPrimes(fichePaie.getPrimes());
-        existing.setSalaireNet(fichePaie.getSalaireNet());
-        existing.setValide(fichePaie.isValide());
-        return fichePaieRepo.save(existing);
+    private double calculerIRPP(double brut) {
+        if (brut <= 62500) return 0;
+        if (brut <= 125000) return (brut - 62500) * 0.10;
+        if (brut <= 250000) return 6250 + (brut - 125000) * 0.165;
+        return 26875 + (brut - 250000) * 0.25;
     }
 
-    public void delete(Long id) {
-        fichePaieRepo.deleteById(id);
-    }
-
-    public FichePaie genererFichePaie(Long employeId, int mois, int annee) {
-        Employe employe = employeRepo.findById(employeId).orElseThrow();
-        Double salaireBrut = employe.getSalaire() != null ? employe.getSalaire() : 0.0;
-        
-        FichePaie fichePaie = FichePaie.builder()
-            .employe(employe)
-            .mois(mois)
-            .annee(annee)
-            .salaireBrut(salaireBrut)
-            .cotisationsCNPS(salaireBrut * 0.08)  // 8% CNPS
-            .impotIRPP(salaireBrut * 0.10)        // 10% IRPP
-            .autresRetenues(0.0)
-            .primes(0.0)
-            .salaireNet(salaireBrut - (salaireBrut * 0.08) - (salaireBrut * 0.10))
-            .dateGeneration(LocalDate.now())
-            .valide(false)
-            .build();
-        
-        return fichePaieRepo.save(fichePaie);
+    private Map<String, Object> toMap(FichePaie f) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", f.getId());
+        m.put("employeId", f.getEmploye().getId());
+        m.put("employeNom", f.getEmploye().getNom() + " " + f.getEmploye().getPrenom());
+        m.put("matricule", f.getEmploye().getMatricule());
+        m.put("poste", f.getEmploye().getPoste());
+        m.put("mois", f.getMois());
+        m.put("annee", f.getAnnee());
+        m.put("salaireBrut", f.getSalaireBrut());
+        m.put("cotisationsCNPS", f.getCotisationsCNPS());
+        m.put("impotIRPP", f.getImpotIRPP());
+        m.put("autresRetenues", f.getAutresRetenues());
+        m.put("primes", f.getPrimes());
+        m.put("salaireNet", f.getSalaireNet());
+        m.put("dateGeneration", f.getDateGeneration());
+        m.put("valide", f.isValide());
+        return m;
     }
 }

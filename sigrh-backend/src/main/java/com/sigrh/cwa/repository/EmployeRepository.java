@@ -12,7 +12,7 @@ public interface EmployeRepository extends JpaRepository<Employe, Long> {
     List<Employe> findByDepartementId(Long departementId);
     List<Employe> findByStatut(StatutEmploye statut);
 
-    // Recherche globale
+    // Recherche globale (nom, email, poste, numéro)
     @Query("SELECT e FROM Employe e WHERE " +
            "LOWER(e.nom) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
            "LOWER(e.prenom) LIKE LOWER(CONCAT('%', :q, '%')) OR " +

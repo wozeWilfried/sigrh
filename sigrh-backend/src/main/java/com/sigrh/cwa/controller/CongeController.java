@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/conges")
@@ -15,18 +16,12 @@ public class CongeController {
     private final CongeService congeService;
 
     @GetMapping
-    public ResponseEntity<List<CongeDTO>> findAll() {
+    public ResponseEntity<List<CongeDTO>> findAll(
+            @RequestParam(required = false) Long employeId,
+            @RequestParam(required = false) String statut) {
+        if (employeId != null) return ResponseEntity.ok(congeService.findByEmploye(employeId));
+        if (statut != null)    return ResponseEntity.ok(congeService.findByStatut(statut));
         return ResponseEntity.ok(congeService.findAll());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<CongeDTO> findById(@PathVariable Long id) {
-        return ResponseEntity.ok(congeService.findById(id));
-    }
-
-    @GetMapping("/employe/{employeId}")
-    public ResponseEntity<List<CongeDTO>> findByEmployeId(@PathVariable Long employeId) {
-        return ResponseEntity.ok(congeService.findByEmployeId(employeId));
     }
 
     @PostMapping
@@ -34,19 +29,16 @@ public class CongeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(congeService.create(dto));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<CongeDTO> update(@PathVariable Long id, @RequestBody CongeDTO dto) {
-        return ResponseEntity.ok(congeService.update(id, dto));
+    @PutMapping("/{id}/valider")
+    public ResponseEntity<CongeDTO> valider(
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(congeService.valider(id, body.get("statut"), body.get("commentaire")));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         congeService.delete(id);
         return ResponseEntity.noContent().build();
-    }
-
-    @PutMapping("/{id}/valider")
-    public ResponseEntity<CongeDTO> valider(@PathVariable Long id, @RequestBody CongeDTO dto) {
-        return ResponseEntity.ok(congeService.validerConge(id, dto));
     }
 }
