@@ -20,6 +20,7 @@ import RHDashboard from '../pages/rh/Dashboard'
 import ManagerDashboard from '../pages/manager/Dashboard'
 import SecretaryDashboard from '../pages/secretary/Dashboard'
 import TurnoverPredictions from '../pages/admin/TurnoverPredictions'
+import RapportsPage from '../pages/admin/RapportsPage'
 import AlertsPage from '../pages/admin/AlertsPage'
 import NotFoundPage from '../pages/NotFoundPage'
 
@@ -176,6 +177,14 @@ export default function AppRouter() {
         element={
           <ProtectedRoute roles={['ADMIN']}>
             <Parametres />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/rapports"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'RH']}>
+            <RapportsPage />
           </ProtectedRoute>
         }
       />

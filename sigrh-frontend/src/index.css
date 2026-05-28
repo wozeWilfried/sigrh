@@ -1,14 +1,5 @@
 @import "tailwindcss";
 
-@keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.98) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.animate-fade-in-scale {
-  animation: fadeInScale 0.5s ease-out forwards;
-}
-
 @theme {
   --color-blue-deep: #1E3A8A;
   --color-blue-hover: #4F46E5;
@@ -27,19 +18,4 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-fade-in-scale {
-  animation: fadeInScale 0.4s ease-out forwards;
 }

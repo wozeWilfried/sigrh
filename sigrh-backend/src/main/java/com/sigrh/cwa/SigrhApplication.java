@@ -2,6 +2,7 @@ package com.sigrh.cwa;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
 
 /**
  * Point d'entrée principal de l'application SIGRH (Système Intégré de Gestion des Ressources Humaines).
@@ -11,6 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * @version 1.0
  */
 @SpringBootApplication
+@EnableCaching
 public class SigrhApplication {
 
 	/**

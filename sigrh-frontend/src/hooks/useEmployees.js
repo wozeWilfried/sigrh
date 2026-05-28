@@ -56,7 +56,7 @@ export default function useEmployees({
       search: search || undefined,
       department: managerDepartment || department || undefined,
       position: position || undefined,
-      status: status || undefined,
+      statut: status || undefined,
     }
   }, [department, page, position, search, size, status, user])
 

@@ -460,11 +460,11 @@ function LeaveBalancePanel({ balance, loading, workingDays, isInsufficient, leav
       ) : balance ? (
         <>
           <div className="grid grid-cols-3 gap-3 mb-3">
-            <BalanceStat label="Total annuel" value={balance.soldeAnnuel} color="slate" />
-            <BalanceStat label="Pris" value={balance.soldePris} color="amber" />
+            <BalanceStat label="Total annuel" value={balance.joursAcquis} color="slate" />
+            <BalanceStat label="Pris" value={balance.joursConsommes} color="amber" />
             <BalanceStat
               label="Restant"
-              value={balance.soldeRestant}
+              value={balance.soldeDisponible}
               color={isInsufficient ? 'red' : 'emerald'}
               highlight
             />
@@ -477,7 +477,7 @@ function LeaveBalancePanel({ balance, loading, workingDays, isInsufficient, leav
                 isInsufficient ? 'bg-red-500' : 'bg-emerald-500'
               }`}
               style={{
-                width: `${Math.min(100, (balance.soldeRestant / balance.soldeAnnuel) * 100)}%`,
+                width: `${Math.min(100, (balance.soldeDisponible / balance.joursAcquis) * 100)}%`,
               }}
             />
           </div>
@@ -489,7 +489,7 @@ function LeaveBalancePanel({ balance, loading, workingDays, isInsufficient, leav
               <p className="text-sm font-bold text-red-700">
                 Solde insuffisant — vous demandez{' '}
                 <span className="underline">{workingDays} j</span> pour un solde de{' '}
-                <span className="underline">{balance.soldeRestant} j</span>
+                <span className="underline">{balance.soldeDisponible} j</span>
               </p>
             </div>
           )}

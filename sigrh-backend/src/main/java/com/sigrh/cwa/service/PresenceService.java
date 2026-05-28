@@ -5,9 +5,10 @@ import com.sigrh.cwa.repository.*;
 import com.sigrh.cwa.enums.StatutPresence;
 import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDate;
+import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -294,6 +295,8 @@ public class PresenceService {
         Employe employe = employeRepo.findById(employeId).orElseThrow();
         if (!security.canAccessEmploye(employeId))
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+        if (employe.getStatut() == com.sigrh.cwa.enums.StatutEmploye.DEPART)
+            throw new IllegalArgumentException("Impossible d'enregistrer une présence pour un employé avec le statut DÉPART");
 
         Presence p = Presence.builder()
             .employe(employe)
@@ -334,6 +337,56 @@ public class PresenceService {
         rapport.put("conges",     list.stream().filter(p -> p.getStatut() == StatutPresence.CONGE).count());
         rapport.put("details",    list.stream().map(this::toMap).collect(Collectors.toList()));
         return rapport;
+    }
+
+    @Cacheable(value = "presenceStats", key = "#employeId + '-' + #periode")
+    public Map<String, Object> computeStats(Long employeId, String periode) {
+        if (!security.canAccessEmploye(employeId))
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+
+        LocalDate start = switch (periode.toUpperCase()) {
+            case "HEBDO" -> LocalDate.now().with(DayOfWeek.MONDAY);
+            case "MENSUEL" -> LocalDate.now().withDayOfMonth(1);
+            default -> throw new IllegalArgumentException("Période invalide: " + periode + " (attendu HEBDO ou MENSUEL)");
+        };
+        LocalDate end = LocalDate.now();
+
+        List<Presence> presences = presenceRepo.findByEmployeIdAndDateBetween(employeId, start, end);
+
+        long nbPresents = presences.stream().filter(p -> p.getStatut() == StatutPresence.PRESENT).count();
+        long nbRetards = presences.stream().filter(p -> p.getStatut() == StatutPresence.RETARD).count();
+        long nbAbsents = presences.stream().filter(p -> p.getStatut() == StatutPresence.ABSENT).count();
+
+        long totalWorkingDays = nbPresents + nbRetards + nbAbsents;
+        double tauxPresence = totalWorkingDays == 0 ? 0.0
+            : Math.round(((nbPresents + nbRetards) * 100.0 / totalWorkingDays) * 100.0) / 100.0;
+
+        double totalHeuresTravaillees = presences.stream()
+            .filter(p -> p.getHeureArrivee() != null && p.getHeureDepart() != null)
+            .mapToDouble(p -> {
+                Duration d = Duration.between(p.getHeureArrivee(), p.getHeureDepart());
+                return Math.abs(d.toMinutes()) / 60.0;
+            })
+            .sum();
+        totalHeuresTravaillees = Math.round(totalHeuresTravaillees * 100.0) / 100.0;
+
+        long joursAvecHeures = presences.stream()
+            .filter(p -> p.getHeureArrivee() != null && p.getHeureDepart() != null)
+            .count();
+        double moyenneHeuresJour = joursAvecHeures == 0 ? 0.0
+            : Math.round((totalHeuresTravaillees / joursAvecHeures) * 100.0) / 100.0;
+
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("employeId", employeId);
+        stats.put("periode", periode.toUpperCase());
+        stats.put("dateDebut", start.toString());
+        stats.put("dateFin", end.toString());
+        stats.put("tauxPresence", tauxPresence);
+        stats.put("nbJoursAbsents", nbAbsents);
+        stats.put("nbRetards", nbRetards);
+        stats.put("totalHeuresTravaillees", totalHeuresTravaillees);
+        stats.put("moyenneHeuresJour", moyenneHeuresJour);
+        return stats;
     }
 
     /**

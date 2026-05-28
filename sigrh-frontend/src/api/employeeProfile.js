@@ -122,7 +122,7 @@ export async function getLeaves(id) {
 
 export async function getAIScore(id) {
   try {
-    const response = await api.get(`/ai/employees/${id}/score`)
+    const response = await api.get(`/ia/employees/${id}/score`)
     return response.data
   } catch (error) {
     if (!shouldUseFallback(error)) throw error

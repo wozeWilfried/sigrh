@@ -11,5 +11,5 @@ package com.sigrh.cwa.enums;
  * @version 1.0
  */
 public enum StatutEmploye {
-    ACTIF, INACTIF, SUSPENDU
+    ACTIF, INACTIF, SUSPENDU, EN_CONGE, DEPART
 }

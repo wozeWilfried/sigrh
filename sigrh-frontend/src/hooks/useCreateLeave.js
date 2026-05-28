@@ -37,7 +37,7 @@ export default function useCreateLeave({ onSuccess } = {}) {
   const workingDays = countWorkingDays(form.dateDebut, form.dateFin)
 
   const isBalanceInsufficient =
-    balance !== null && form.type === 'ANNUEL' && workingDays > balance.soldeRestant
+    balance !== null && form.type === 'ANNUEL' && workingDays > balance.soldeDisponible
 
   const isFormValid =
     form.employee !== null &&

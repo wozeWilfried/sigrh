@@ -78,6 +78,18 @@ const adminNavigation = [
     ],
   },
   {
+    section: 'Rapports',
+    items: [
+      {
+        label: 'Rapports',
+        icon: BarChart3,
+        children: [
+          { label: 'Export RH global', path: '/admin/rapports' },
+        ],
+      },
+    ],
+  },
+  {
     section: 'IA & Analytics',
     items: [
       {

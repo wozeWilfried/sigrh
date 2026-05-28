@@ -19,3 +19,8 @@ export async function updateEmployee(id, payload) {
   const response = await api.put(`/employes/${id}`, payload)
   return response.data
 }
+
+export async function updateEmployeeStatus(id, statut) {
+  const response = await api.patch(`/employes/${id}/status`, { statut })
+  return response.data
+}

@@ -159,6 +159,45 @@ export async function getAttendanceStats(filters) {
   }
 }
 
+export async function getEmployeePresenceStats(employeId, periode = 'MENSUEL') {
+  try {
+    const response = await api.get('/presences/stats', {
+      params: { employeId, periode },
+    })
+    return response.data
+  } catch (error) {
+    if (!shouldUseFallback(error)) throw error
+    await wait()
+    return mockEmployeeStats(employeId, periode)
+  }
+}
+
+function mockEmployeeStats(employeId, periode) {
+  const isHebdo = periode === 'HEBDO'
+  const avgHours = isHebdo ? 35.0 : 152.0
+  const absences = isHebdo ? 1 : 3
+  const retards = isHebdo ? 2 : 5
+  const totalWorkingDays = isHebdo ? 5 : 22
+  const presents = totalWorkingDays - absences - retards
+  const tauxPresence = Math.round(((presents + retards) / totalWorkingDays) * 10000) / 100
+
+  const start = isHebdo
+    ? toIsoDate(new Date(new Date().setDate(new Date().getDate() - new Date().getDay() + 1)))
+    : new Date().toISOString().slice(0, 7) + '-01'
+
+  return {
+    employeId,
+    periode,
+    dateDebut: start,
+    dateFin: toIsoDate(new Date()),
+    tauxPresence,
+    nbJoursAbsents: absences,
+    nbRetards: retards,
+    totalHeuresTravaillees: avgHours,
+    moyenneHeuresJour: Math.round((avgHours / presents) * 100) / 100,
+  }
+}
+
 export async function getAttendanceEmployees() {
   try {
     const response = await api.get('/employes')

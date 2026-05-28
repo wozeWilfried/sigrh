@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
+  AlertTriangle,
   ArrowLeft,
   Bot,
   CalendarCheck,
   ChevronRight,
   Clock3,
+  Hourglass,
   Mail,
   Pencil,
   Phone,
+  Timer,
   Umbrella,
   UserRound,
 } from 'lucide-react'
@@ -19,6 +22,7 @@ import {
   getEmployeeById,
   getLeaves,
 } from '../../api/employeeProfile'
+import { getEmployeePresenceStats } from '../../api/attendanceAnalytics'
 
 const tabs = [
   { id: 'infos', label: 'Informations', icon: UserRound },
@@ -59,7 +63,7 @@ export default function EmployeeProfilePage() {
   const [employeeLoading, setEmployeeLoading] = useState(true)
   const [employeeError, setEmployeeError] = useState(null)
   const [tabState, setTabState] = useState({
-    attendances: { data: null, loading: false, error: null, loaded: false },
+    attendances: { data: null, stats: null, loading: false, error: null, loaded: false },
     leaves: { data: null, loading: false, error: null, loaded: false },
     ai: { data: null, loading: false, error: null, loaded: false },
   })
@@ -89,7 +93,16 @@ export default function EmployeeProfilePage() {
 
   const loadTabData = useCallback(async (tabId) => {
     const loaders = {
-      attendances: getAttendances,
+      attendances: async (empId) => {
+        const [data, stats] = await Promise.allSettled([
+          getAttendances(empId),
+          getEmployeePresenceStats(empId, 'MENSUEL'),
+        ])
+        return {
+          data: data.status === 'fulfilled' ? data.value : [],
+          stats: stats.status === 'fulfilled' ? stats.value : null,
+        }
+      },
       leaves: getLeaves,
       ai: getAIScore,
     }
@@ -102,11 +115,18 @@ export default function EmployeeProfilePage() {
     }))
 
     try {
-      const data = await loaders[tabId](id)
-      setTabState((current) => ({
-        ...current,
-        [tabId]: { data, loading: false, error: null, loaded: true },
-      }))
+      const result = await loaders[tabId](id)
+      if (tabId === 'attendances') {
+        setTabState((current) => ({
+          ...current,
+          attendances: { ...result, loading: false, error: null, loaded: true },
+        }))
+      } else {
+        setTabState((current) => ({
+          ...current,
+          [tabId]: { data: result, loading: false, error: null, loaded: true },
+        }))
+      }
     } catch {
       setTabState((current) => ({
         ...current,
@@ -254,42 +274,94 @@ function InformationTab({ employee }) {
 
 function AttendancesTab({ state }) {
   const attendances = state.data ?? []
+  const stats = state.stats ?? null
   const presenceRate = useMemo(() => {
+    if (stats) return stats.tauxPresence
     if (!attendances.length) return 0
     const presentCount = attendances.filter((item) => normalizeAttendanceStatus(item) === 'PRESENT').length
     return Math.round((presentCount / attendances.length) * 100)
-  }, [attendances])
+  }, [attendances, stats])
 
   if (state.loading) return <TableSkeleton />
   if (state.error) return <ErrorCard message={state.error} />
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-      <Card className="p-6">
-        <SectionTitle title="Taux de présence" subtitle="Calculé sur les 30 derniers jours." />
-        <div className="mt-7">
-          <ProgressMetric value={presenceRate} />
-          <MiniBarChart data={attendances} />
+    <div className="grid gap-6">
+      {stats && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            icon={Clock3}
+            iconColor="text-emerald-600"
+            iconBg="bg-emerald-50"
+            label="Taux de présence"
+            value={`${stats.tauxPresence}%`}
+          />
+          <KpiCard
+            icon={AlertTriangle}
+            iconColor="text-red-600"
+            iconBg="bg-red-50"
+            label="Absences"
+            value={stats.nbJoursAbsents}
+          />
+          <KpiCard
+            icon={Hourglass}
+            iconColor="text-amber-600"
+            iconBg="bg-amber-50"
+            label="Retards"
+            value={stats.nbRetards}
+          />
+          <KpiCard
+            icon={Timer}
+            iconColor="text-blue-600"
+            iconBg="bg-blue-50"
+            label="Heures travaillées"
+            value={`${stats.totalHeuresTravaillees}h`}
+          />
         </div>
-      </Card>
+      )}
+      <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+        <Card className="p-6">
+          <SectionTitle title="Taux de présence" subtitle="Calculé sur les 30 derniers jours." />
+          <div className="mt-7">
+            <ProgressMetric value={presenceRate} />
+            <MiniBarChart data={attendances} />
+          </div>
+        </Card>
 
-      <Card className="overflow-hidden">
-        <div className="border-b border-slate-100 p-5">
-          <SectionTitle title="30 derniers jours" subtitle="Présences, absences et retards." />
-        </div>
-        <ResponsiveTable
-          headers={['Date', 'Statut']}
-          rows={attendances.map((attendance) => [
-            formatDate(attendance.date),
-            <Badge
-              key={attendance.id ?? attendance.date}
-              value={normalizeAttendanceStatus(attendance)}
-              styles={attendanceStatusStyles}
-            />,
-          ])}
-        />
-      </Card>
+        <Card className="overflow-hidden">
+          <div className="border-b border-slate-100 p-5">
+            <SectionTitle title="30 derniers jours" subtitle="Présences, absences et retards." />
+          </div>
+          <ResponsiveTable
+            headers={['Date', 'Statut']}
+            rows={attendances.map((attendance) => [
+              formatDate(attendance.date),
+              <Badge
+                key={attendance.id ?? attendance.date}
+                value={normalizeAttendanceStatus(attendance)}
+                styles={attendanceStatusStyles}
+              />,
+            ])}
+          />
+        </Card>
+      </div>
     </div>
+  )
+}
+
+function KpiCard({ icon: Icon, iconColor, iconBg, label, value }) {
+  return (
+    <Card className="p-5">
+      <div className="flex items-center gap-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${iconBg}`}>
+          <Icon size={24} className={iconColor} />
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">{label}</p>
+          <p className="mt-0.5 text-xl font-bold text-slate-950">{value}</p>
+        </div>
+      </div>
+    </Card>
   )
 }
 

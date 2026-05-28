@@ -88,14 +88,14 @@ const mockEmployees = [
 ]
 
 const mockLeaveBalances = {
-  1: { soldeAnnuel: 26, soldeRestant: 18, soldePris: 8 },
-  2: { soldeAnnuel: 26, soldeRestant: 3, soldePris: 23 },
-  3: { soldeAnnuel: 26, soldeRestant: 22, soldePris: 4 },
-  4: { soldeAnnuel: 26, soldeRestant: 0, soldePris: 26 },
-  5: { soldeAnnuel: 26, soldeRestant: 14, soldePris: 12 },
-  6: { soldeAnnuel: 26, soldeRestant: 20, soldePris: 6 },
-  7: { soldeAnnuel: 26, soldeRestant: 11, soldePris: 15 },
-  8: { soldeAnnuel: 26, soldeRestant: 26, soldePris: 0 },
+  1: { soldeDisponible: 18, joursAcquis: 26, joursConsommes: 8, joursEnAttente: 0 },
+  2: { soldeDisponible: 3, joursAcquis: 26, joursConsommes: 23, joursEnAttente: 0 },
+  3: { soldeDisponible: 22, joursAcquis: 26, joursConsommes: 4, joursEnAttente: 0 },
+  4: { soldeDisponible: 0, joursAcquis: 26, joursConsommes: 26, joursEnAttente: 0 },
+  5: { soldeDisponible: 14, joursAcquis: 26, joursConsommes: 12, joursEnAttente: 0 },
+  6: { soldeDisponible: 20, joursAcquis: 26, joursConsommes: 6, joursEnAttente: 0 },
+  7: { soldeDisponible: 11, joursAcquis: 26, joursConsommes: 15, joursEnAttente: 0 },
+  8: { soldeDisponible: 26, joursAcquis: 26, joursConsommes: 0, joursEnAttente: 0 },
 }
 
 // ─── Normalizers ─────────────────────────────────────────────────────────────
@@ -148,20 +148,21 @@ export async function searchEmployees(query = '') {
 /**
  * Récupère le solde de congés d'un employé.
  * @param {number} employeeId
- * @returns {Promise<{soldeAnnuel: number, soldeRestant: number, soldePris: number}>}
+ * @returns {Promise<{soldeDisponible: number, joursAcquis: number, joursConsommes: number, joursEnAttente: number}>}
  */
 export async function getLeaveBalance(employeeId) {
   try {
-    const response = await api.get(`/employes/${employeeId}/conges/solde`)
+    const response = await api.get(`/conges/solde/${employeeId}`)
     return response.data
   } catch (error) {
     if (!shouldUseFallback(error)) throw error
     await wait()
     return (
       mockLeaveBalances[employeeId] ?? {
-        soldeAnnuel: 26,
-        soldeRestant: 26,
-        soldePris: 0,
+        soldeDisponible: 26,
+        joursAcquis: 26,
+        joursConsommes: 0,
+        joursEnAttente: 0,
       }
     )
   }

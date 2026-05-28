@@ -276,6 +276,80 @@ public class ExportService {
         }
     }
 
+    // ─── RAPPORT GLOBAL (multi-feuilles) ────────────
+
+    public byte[] exportRapportEmployesExcel() {
+        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+            feuilleEmployes(wb);
+            feuillePresences(wb);
+            feuilleConges(wb);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            wb.write(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur d'export du rapport RH global", e);
+        }
+    }
+
+    private void feuilleEmployes(XSSFWorkbook wb) {
+        XSSFSheet sheet = wb.createSheet("Employés");
+        writeHeader(wb, sheet, "Matricule", "Nom", "Prénom", "Email", "Téléphone",
+            "Date naissance", "Genre", "Poste", "Département", "Salaire",
+            "Date embauche", "Statut");
+        List<Employe> emps = employeRepo.findAll();
+        for (int i = 0; i < emps.size(); i++) {
+            Employe e = emps.get(i);
+            XSSFRow row = sheet.createRow(i + 1);
+            row.createCell(0).setCellValue(e.getMatricule());
+            row.createCell(1).setCellValue(e.getNom());
+            row.createCell(2).setCellValue(e.getPrenom());
+            row.createCell(3).setCellValue(e.getEmail());
+            row.createCell(4).setCellValue(e.getTelephone() != null ? e.getTelephone() : "");
+            row.createCell(5).setCellValue(e.getDateNaissance() != null ? e.getDateNaissance().format(DTF) : "");
+            row.createCell(6).setCellValue(e.getGenre() != null ? e.getGenre().name() : "");
+            row.createCell(7).setCellValue(e.getPoste() != null ? e.getPoste() : "");
+            row.createCell(8).setCellValue(e.getDepartement() != null ? e.getDepartement().getNom() : "");
+            row.createCell(9).setCellValue(e.getSalaire() != null ? e.getSalaire() : 0);
+            row.createCell(10).setCellValue(e.getDateEmbauche() != null ? e.getDateEmbauche().format(DTF) : "");
+            row.createCell(11).setCellValue(e.getStatut() != null ? e.getStatut().name() : "");
+        }
+        for (int i = 0; i < 12; i++) sheet.autoSizeColumn(i);
+    }
+
+    private void feuillePresences(XSSFWorkbook wb) {
+        XSSFSheet sheet = wb.createSheet("Présences");
+        writeHeader(wb, sheet, "Employé", "Date", "Statut", "Heure arrivée", "Heure départ");
+        List<Presence> list = presenceRepo.findAll();
+        for (int i = 0; i < list.size(); i++) {
+            Presence p = list.get(i);
+            XSSFRow row = sheet.createRow(i + 1);
+            row.createCell(0).setCellValue(p.getEmploye().getNom() + " " + p.getEmploye().getPrenom());
+            row.createCell(1).setCellValue(p.getDate().format(DTF));
+            row.createCell(2).setCellValue(p.getStatut().name());
+            row.createCell(3).setCellValue(p.getHeureArrivee() != null ? p.getHeureArrivee().toString() : "");
+            row.createCell(4).setCellValue(p.getHeureDepart() != null ? p.getHeureDepart().toString() : "");
+        }
+        for (int i = 0; i < 5; i++) sheet.autoSizeColumn(i);
+    }
+
+    private void feuilleConges(XSSFWorkbook wb) {
+        XSSFSheet sheet = wb.createSheet("Congés");
+        writeHeader(wb, sheet, "Employé", "Type", "Date début", "Date fin", "Nombre jours", "Statut", "Motif");
+        List<Conge> conges = congeRepo.findAll();
+        for (int i = 0; i < conges.size(); i++) {
+            Conge c = conges.get(i);
+            XSSFRow row = sheet.createRow(i + 1);
+            row.createCell(0).setCellValue(c.getEmploye().getNom() + " " + c.getEmploye().getPrenom());
+            row.createCell(1).setCellValue(c.getType().name());
+            row.createCell(2).setCellValue(c.getDateDebut() != null ? c.getDateDebut().format(DTF) : "");
+            row.createCell(3).setCellValue(c.getDateFin() != null ? c.getDateFin().format(DTF) : "");
+            row.createCell(4).setCellValue(c.getNombreJours() != null ? c.getNombreJours() : 0);
+            row.createCell(5).setCellValue(c.getStatut().name());
+            row.createCell(6).setCellValue(c.getMotif() != null ? c.getMotif() : "");
+        }
+        for (int i = 0; i < 7; i++) sheet.autoSizeColumn(i);
+    }
+
     // ─── PRIVÉ ───────────────────────────────────────
 
     private void writeHeader(XSSFWorkbook wb, XSSFSheet sheet, String... columns) {

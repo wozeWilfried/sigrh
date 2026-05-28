@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ChevronLeft,
@@ -9,9 +9,12 @@ import {
   RefreshCcw,
   Search,
   UserRound,
+  Check,
+  X,
 } from 'lucide-react'
 import AppLayout from '../../components/layout/AppLayout'
 import useEmployees from '../../hooks/useEmployees'
+import { updateEmployeeStatus } from '../../api/employees'
 
 const PAGE_SIZE = 8
 
@@ -35,16 +38,30 @@ const positionOptions = [
 
 const statusOptions = [
   { label: 'Tous les statuts', value: '' },
-  { label: 'Active', value: 'ACTIVE' },
-  { label: 'Inactive', value: 'INACTIVE' },
-  { label: 'Suspended', value: 'SUSPENDED' },
+  { label: 'Actif', value: 'ACTIF' },
+  { label: 'Inactif', value: 'INACTIF' },
+  { label: 'Suspendu', value: 'SUSPENDU' },
+  { label: 'En congé', value: 'EN_CONGE' },
+  { label: 'Départ', value: 'DEPART' },
 ]
 
 const statusStyles = {
-  ACTIVE: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  INACTIVE: 'bg-slate-100 text-slate-600 ring-slate-200',
-  SUSPENDED: 'bg-red-50 text-red-700 ring-red-200',
+  ACTIF: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  INACTIF: 'bg-slate-100 text-slate-600 ring-slate-200',
+  SUSPENDU: 'bg-red-50 text-red-700 ring-red-200',
+  EN_CONGE: 'bg-amber-50 text-amber-700 ring-amber-200',
+  DEPART: 'bg-rose-50 text-rose-700 ring-rose-200',
 }
+
+const statusLabels = {
+  ACTIF: 'Actif',
+  INACTIF: 'Inactif',
+  SUSPENDU: 'Suspendu',
+  EN_CONGE: 'En congé',
+  DEPART: 'Départ',
+}
+
+const STATUS_LIST = ['ACTIF', 'INACTIF', 'SUSPENDU', 'EN_CONGE', 'DEPART']
 
 export default function Employes() {
   const [search, setSearch] = useState('')
@@ -141,7 +158,7 @@ export default function Employes() {
           ) : employees.length === 0 ? (
             <EmployeeEmptyState onResetFilters={resetFilters} />
           ) : (
-            <EmployeeTable employees={employees} />
+            <EmployeeTable employees={employees} onRefetch={refetch} />
           )}
 
           <Pagination
@@ -248,7 +265,7 @@ function FilterSelect({ label, value, options, disabled = false, onChange }) {
   )
 }
 
-function EmployeeTable({ employees }) {
+function EmployeeTable({ employees, onRefetch }) {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-slate-100">
@@ -267,7 +284,7 @@ function EmployeeTable({ employees }) {
         </thead>
         <tbody className="divide-y divide-slate-100 bg-white">
           {employees.map((employee) => (
-            <EmployeeRow key={employee.id ?? employee.email} employee={employee} />
+            <EmployeeRow key={employee.id ?? employee.email} employee={employee} onRefetch={onRefetch} />
           ))}
         </tbody>
       </table>
@@ -275,7 +292,7 @@ function EmployeeTable({ employees }) {
   )
 }
 
-function EmployeeRow({ employee }) {
+function EmployeeRow({ employee, onRefetch }) {
   const employeeId = employee.id ?? employee.employeId
   const fullName = `${employee.firstName ?? employee.prenom ?? ''} ${employee.lastName ?? employee.nom ?? ''}`.trim()
   const firstName = employee.firstName ?? employee.prenom ?? '-'
@@ -283,7 +300,38 @@ function EmployeeRow({ employee }) {
   const email = employee.email ?? 'email non renseigné'
   const position = employee.position ?? employee.poste ?? '-'
   const department = employee.departmentName ?? employee.department?.name ?? employee.departement ?? '-'
-  const status = employee.status ?? 'INACTIVE'
+  const status = employee.statut ?? employee.status ?? 'INACTIF'
+
+  const [statusOpen, setStatusOpen] = useState(false)
+  const [changing, setChanging] = useState(false)
+  const statusRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (statusRef.current && !statusRef.current.contains(e.target)) {
+        setStatusOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleStatusChange = useCallback(async (newStatus) => {
+    if (newStatus === status) {
+      setStatusOpen(false)
+      return
+    }
+    setChanging(true)
+    try {
+      await updateEmployeeStatus(employeeId, newStatus)
+      if (onRefetch) onRefetch()
+    } catch (e) {
+      // erreur silencieuse — on pourra ajouter un toast plus tard
+    } finally {
+      setChanging(false)
+      setStatusOpen(false)
+    }
+  }, [employeeId, status, onRefetch])
 
   return (
     <tr className="transition-colors hover:bg-slate-50/80">
@@ -315,7 +363,43 @@ function EmployeeRow({ employee }) {
             icon={Pencil}
             to={employeeId ? `/admin/employes/${employeeId}/modifier` : undefined}
           />
-          <ActionButton label="Changer statut" icon={MoreHorizontal} />
+          <div className="relative" ref={statusRef}>
+            <ActionButton
+              label="Changer statut"
+              icon={MoreHorizontal}
+              onClick={() => setStatusOpen(!statusOpen)}
+            />
+            {statusOpen && (
+              <div className="absolute right-0 top-full z-50 mt-1 w-44 origin-top-right rounded-xl border border-slate-200 bg-white py-1 shadow-lg ring-1 ring-black/5">
+                <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  Changer le statut
+                </p>
+                {STATUS_LIST.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => handleStatusChange(s)}
+                    disabled={changing || s === status}
+                    className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                      s === status
+                        ? 'bg-slate-50 text-slate-400 cursor-not-allowed'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        s === 'ACTIF' ? 'bg-emerald-500' :
+                        s === 'INACTIF' ? 'bg-slate-400' :
+                        s === 'SUSPENDU' ? 'bg-red-500' :
+                        s === 'EN_CONGE' ? 'bg-amber-500' : 'bg-rose-500'
+                      }`}
+                    />
+                    {statusLabels[s]}
+                    {s === status && <Check size={14} className="ml-auto text-emerald-500" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </td>
     </tr>
@@ -352,15 +436,15 @@ function StatusBadge({ status }) {
   return (
     <span
       className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ring-1 ${
-        statusStyles[status] ?? statusStyles.INACTIVE
+        statusStyles[status] ?? statusStyles.INACTIF
       }`}
     >
-      {status}
+      {statusLabels[status] ?? status}
     </span>
   )
 }
 
-function ActionButton({ label, icon: Icon, to }) {
+function ActionButton({ label, icon: Icon, to, onClick }) {
   const className =
     'flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:border-slate-300 hover:bg-white hover:text-slate-950'
 
@@ -373,7 +457,7 @@ function ActionButton({ label, icon: Icon, to }) {
   }
 
   return (
-    <button type="button" className={className} aria-label={label} title={label}>
+    <button type="button" onClick={onClick} className={className} aria-label={label} title={label}>
       <Icon size={16} />
     </button>
   )

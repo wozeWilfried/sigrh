@@ -9,8 +9,11 @@ import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.sigrh.cwa.enums.StatutEmploye.*;
 
 /**
  * Service de gestion des employés.
@@ -32,25 +35,82 @@ public class EmployeService {
     private final SecurityHelper security;
 
     /**
-     * Récupère tous les employés (accès filtré selon le rôle de l'utilisateur).
-     * 
-     * @return Liste des employés
+     * Récupère tous les employés avec filtres et pagination (accès filtré selon le rôle).
+     *
+     * @param page       Numéro de page
+     * @param size       Taille de page
+     * @param search     Texte de recherche
+     * @param department Nom du département
+     * @param position   Intitulé du poste
+     * @param statut     Statut (ACTIF, INACTIF, SUSPENDU, EN_CONGE, DEPART)
+     * @return Page d'employés avec métadonnées de pagination
      */
-    public List<EmployeDTO> findAll() {
+    public Map<String, Object> findAll(int page, int size, String search,
+                                        String department, String position, String statut) {
+        List<Employe> accessible = getAccessibleEmployees();
+
+        Stream<Employe> stream = accessible.stream();
+
+        if (search != null && !search.isBlank()) {
+            String q = search.toLowerCase();
+            stream = stream.filter(e ->
+                (e.getNom() != null && e.getNom().toLowerCase().contains(q)) ||
+                (e.getPrenom() != null && e.getPrenom().toLowerCase().contains(q)) ||
+                (e.getMatricule() != null && e.getMatricule().toLowerCase().contains(q)) ||
+                (e.getPoste() != null && e.getPoste().toLowerCase().contains(q)) ||
+                (e.getEmail() != null && e.getEmail().toLowerCase().contains(q))
+            );
+        }
+        if (department != null && !department.isBlank()) {
+            String dept = department.toLowerCase();
+            stream = stream.filter(e ->
+                e.getDepartement() != null && e.getDepartement().getNom() != null &&
+                e.getDepartement().getNom().toLowerCase().contains(dept)
+            );
+        }
+        if (position != null && !position.isBlank()) {
+            String pos = position.toLowerCase();
+            stream = stream.filter(e ->
+                e.getPoste() != null && e.getPoste().toLowerCase().contains(pos)
+            );
+        }
+        if (statut != null && !statut.isBlank()) {
+            stream = stream.filter(e ->
+                e.getStatut() != null && e.getStatut().name().equals(statut)
+            );
+        }
+
+        List<EmployeDTO> dtos = stream.map(this::toDTO).collect(Collectors.toList());
+        int totalElements = dtos.size();
+        int totalPages = Math.max(1, (int) Math.ceil((double) totalElements / size));
+        int fromIndex = page * size;
+        int toIndex = Math.min(fromIndex + size, totalElements);
+
+        List<EmployeDTO> content = fromIndex >= totalElements ? List.of() : dtos.subList(fromIndex, toIndex);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("content", content);
+        result.put("number", page);
+        result.put("size", size);
+        result.put("totalElements", totalElements);
+        result.put("totalPages", totalPages);
+        return result;
+    }
+
+    private List<Employe> getAccessibleEmployees() {
         List<Employe> all = employeRepo.findAll();
         if (security.isAdminOrRh()) {
-            return all.stream().map(this::toDTO).collect(Collectors.toList());
+            return all;
         }
         if (security.isManager()) {
             Long deptId = security.getCurrentDepartementId();
             return all.stream()
                 .filter(e -> e.getDepartement() != null && e.getDepartement().getId().equals(deptId))
-                .map(this::toDTO).collect(Collectors.toList());
+                .collect(Collectors.toList());
         }
-        // Employé : accès limité à son propre profil
         return all.stream()
             .filter(e -> e.getId().equals(security.getCurrentEmployeId()))
-            .map(this::toDTO).collect(Collectors.toList());
+            .collect(Collectors.toList());
     }
 
     /**
@@ -89,7 +149,15 @@ public class EmployeService {
     @Transactional
     public EmployeDTO create(EmployeDTO dto) {
         Employe e = toEntity(dto);
+        if (e.getMatricule() == null || e.getMatricule().isBlank()) {
+            e.setMatricule(generateMatricule());
+        }
         return toDTO(employeRepo.save(e));
+    }
+
+    private String generateMatricule() {
+        long count = employeRepo.count();
+        return "EMP" + String.format("%03d", count + 1);
     }
 
     /**
@@ -113,6 +181,49 @@ public class EmployeService {
             existing.setDepartement(deptRepo.findById(dto.getDepartementId()).orElseThrow());
         }
         return toDTO(employeRepo.save(existing));
+    }
+
+    private static final Map<StatutEmploye, Set<StatutEmploye>> VALID_TRANSITIONS = Map.of(
+        ACTIF, Set.of(INACTIF, SUSPENDU, EN_CONGE, DEPART),
+        INACTIF, Set.of(ACTIF, DEPART),
+        SUSPENDU, Set.of(ACTIF, INACTIF, DEPART),
+        EN_CONGE, Set.of(ACTIF, INACTIF, DEPART),
+        DEPART, Set.of()
+    );
+
+    /**
+     * Modifie le statut d'un employé.
+     * Opération réservée aux administrateurs et RH.
+     * Valide la transition selon les règles métier.
+     *
+     * @param id     Identifiant de l'employé
+     * @param statut Nouveau statut (ACTIF, INACTIF, SUSPENDU, EN_CONGE, DEPART)
+     * @return EmployeDTO mis à jour
+     */
+    @Transactional
+    public EmployeDTO updateStatus(Long id, String statut) {
+        Employe emp = employeRepo.findById(id).orElseThrow();
+        StatutEmploye current = emp.getStatut();
+        StatutEmploye target;
+        try {
+            target = StatutEmploye.valueOf(statut);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Statut invalide : " + statut);
+        }
+
+        if (current == target) {
+            throw new IllegalArgumentException("L'employé a déjà le statut " + statut);
+        }
+
+        Set<StatutEmploye> allowed = VALID_TRANSITIONS.get(current);
+        if (allowed == null || !allowed.contains(target)) {
+            throw new IllegalArgumentException(
+                "Transition de statut invalide : " + current + " → " + target
+            );
+        }
+
+        emp.setStatut(target);
+        return toDTO(employeRepo.save(emp));
     }
 
     /**
