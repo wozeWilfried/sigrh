@@ -76,4 +76,15 @@ public class CongeController {
         congeService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Calcule le solde de congés ANNUEL d'un employé.
+     * 
+     * @param employeId Identifiant de l'employé
+     * @return soldeDisponible, joursAcquis, joursConsommes, joursEnAttente
+     */
+    @GetMapping("/solde/{employeId}")
+    public ResponseEntity<Map<String, Object>> getSolde(@PathVariable Long employeId) {
+        return ResponseEntity.ok(congeService.getSolde(employeId));
+    }
 }

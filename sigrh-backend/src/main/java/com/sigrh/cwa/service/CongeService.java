@@ -4,14 +4,18 @@ import com.sigrh.cwa.dto.CongeDTO;
 import com.sigrh.cwa.entity.*;
 import com.sigrh.cwa.repository.*;
 import com.sigrh.cwa.enums.StatutConge;
+import com.sigrh.cwa.enums.StatutEmploye;
 import com.sigrh.cwa.enums.TypeConge;
 import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
+import java.time.Period;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -92,6 +96,8 @@ public class CongeService {
         Employe employe = employeRepo.findById(dto.getEmployeId()).orElseThrow();
         if (!security.canAccessEmploye(dto.getEmployeId()))
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+        if (employe.getStatut() == StatutEmploye.DEPART)
+            throw new IllegalArgumentException("Impossible de créer un congé pour un employé avec le statut DÉPART");
         long jours = ChronoUnit.DAYS.between(dto.getDateDebut(), dto.getDateFin()) + 1;
 
         Conge conge = Conge.builder()
@@ -136,6 +142,49 @@ public class CongeService {
             && !security.isSelf(conge.getEmploye() != null ? conge.getEmploye().getId() : null))
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
         congeRepo.deleteById(id);
+    }
+
+    /**
+     * Calcule le solde de congés ANNUEL d'un employé.
+     * 
+     * Formule: 
+     *   joursAcquis = ancienneté (années) × taux annuel (30 jours par défaut)
+     *   joursConsommes = somme des congés APPROUVE de type ANNUEL
+     *   joursEnAttente = somme des congés EN_ATTENTE de type ANNUEL
+     *   soldeDisponible = joursAcquis - joursConsommes
+     * 
+     * @param employeId Identifiant de l'employé
+     * @return Map contenant soldeDisponible, joursAcquis, joursConsommes, joursEnAttente
+     */
+    public Map<String, Object> getSolde(Long employeId) {
+        Employe employe = employeRepo.findById(employeId).orElseThrow();
+        if (!security.canAccessEmploye(employeId))
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+
+        int tauxAnnuel = 30;
+
+        int ancienneteAnnees = Period.between(employe.getDateEmbauche(), LocalDate.now()).getYears();
+        int joursAcquis = Math.max(0, ancienneteAnnees * tauxAnnuel);
+
+        int joursConsommes = congeRepo.findByEmployeIdAndTypeAndStatut(employeId, TypeConge.ANNUEL, StatutConge.APPROUVE)
+            .stream()
+            .mapToInt(c -> c.getNombreJours() != null ? c.getNombreJours() : 0)
+            .sum();
+
+        int joursEnAttente = congeRepo.findByEmployeIdAndTypeAndStatut(employeId, TypeConge.ANNUEL, StatutConge.EN_ATTENTE)
+            .stream()
+            .mapToInt(c -> c.getNombreJours() != null ? c.getNombreJours() : 0)
+            .sum();
+
+        int soldeDisponible = Math.max(0, joursAcquis - joursConsommes);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("employeId", employeId);
+        result.put("soldeDisponible", soldeDisponible);
+        result.put("joursAcquis", joursAcquis);
+        result.put("joursConsommes", joursConsommes);
+        result.put("joursEnAttente", joursEnAttente);
+        return result;
     }
 
     /**

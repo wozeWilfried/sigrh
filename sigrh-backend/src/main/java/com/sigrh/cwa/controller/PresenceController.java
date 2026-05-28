@@ -10,7 +10,8 @@ import java.util.*;
 
 /**
  * Contrôleur REST pour la gestion des présences des employés.
- * Permet d'enregistrer et consulter les présences/absences.
+ * Permet d'enregistrer, consulter les présences/absences
+ * et d'obtenir des indicateurs agrégés.
  * 
  * Point de terminaison: /api/presences
  * 
@@ -50,6 +51,40 @@ public class PresenceController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate debut,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
         return ResponseEntity.ok(presenceService.findByEmploye(id, debut, fin));
+    }
+
+    @GetMapping("/historique")
+    public ResponseEntity<Map<String, Object>> getHistory(
+            @RequestParam(required = false) String employeeId,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(presenceService.getAttendanceHistory(parseLong(employeeId), department, startDate, endDate));
+    }
+
+    @GetMapping("/statistiques")
+    public ResponseEntity<Map<String, Object>> getStatistics(
+            @RequestParam(required = false) String employeeId,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return ResponseEntity.ok(presenceService.getAttendanceStatistics(parseLong(employeeId), department, startDate, endDate));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getStats(
+            @RequestParam Long employeId,
+            @RequestParam(defaultValue = "MENSUEL") String periode) {
+        return ResponseEntity.ok(presenceService.computeStats(employeId, periode));
+    }
+
+    private Long parseLong(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return Long.valueOf(value);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 
     /**

@@ -5,9 +5,10 @@ import com.sigrh.cwa.repository.*;
 import com.sigrh.cwa.enums.StatutPresence;
 import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.LocalDate;
+import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -71,6 +72,217 @@ public class PresenceService {
             .stream().map(this::toMap).collect(Collectors.toList());
     }
 
+    public Map<String, Object> getAttendanceHistory(Long employeeId, String department, LocalDate startDate, LocalDate endDate) {
+        LocalDate start = startDate != null ? startDate : LocalDate.now().minusDays(13);
+        LocalDate end = endDate != null ? endDate : LocalDate.now();
+        if (employeeId != null && !security.canAccessEmploye(employeeId))
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+
+        // Build efficient cache of filtered presences
+        List<Presence> allPresences = presenceRepo.findAll();
+        Map<Long, List<Presence>> presencesByEmployeeId = new LinkedHashMap<>();
+        Set<Long> visibleEmployeeIds = new HashSet<>();
+        
+        for (Presence p : allPresences) {
+            if (p.getDate() == null || p.getEmploye() == null) continue;
+            if (p.getDate().isBefore(start) || p.getDate().isAfter(end)) continue;
+            
+            Long empId = p.getEmploye().getId();
+            if (employeeId != null && !employeeId.equals(empId)) continue;
+            if (department != null && !department.isBlank() && 
+                (p.getEmploye().getDepartement() == null || !department.equalsIgnoreCase(p.getEmploye().getDepartement().getNom()))) 
+                continue;
+            
+            if (visibleByRole(p)) {
+                presencesByEmployeeId.computeIfAbsent(empId, key -> new ArrayList<>()).add(p);
+                visibleEmployeeIds.add(empId);
+            }
+        }
+
+        // Build days list
+        List<String> days = start.datesUntil(end.plusDays(1))
+            .map(LocalDate::toString)
+            .toList();
+
+        // Build employee maps from visible employees
+        Map<Long, Map<String, Object>> employeeMap = new LinkedHashMap<>();
+        for (Long empId : visibleEmployeeIds) {
+            Optional<Employe> employe = employeRepo.findById(empId);
+            if (employe.isPresent()) {
+                Employe e = employe.get();
+                Map<String, Object> eMap = new LinkedHashMap<>();
+                eMap.put("id", e.getId());
+                eMap.put("nom", e.getNom());
+                eMap.put("prenom", e.getPrenom());
+                eMap.put("departementNom", e.getDepartement() != null ? e.getDepartement().getNom() : null);
+                eMap.put("email", e.getEmail());
+                employeeMap.put(empId, eMap);
+            }
+        }
+
+        // Build records: employee -> day -> attendance
+        List<Map<String, Object>> records = new ArrayList<>();
+        for (Map.Entry<Long, Map<String, Object>> emp : employeeMap.entrySet()) {
+            Map<String, Object> record = new LinkedHashMap<>();
+            record.put("employee", emp.getValue());
+            
+            Map<String, Object> attendanceByDay = new LinkedHashMap<>();
+            List<Presence> empPresences = presencesByEmployeeId.getOrDefault(emp.getKey(), new ArrayList<>());
+            
+            for (String day : days) {
+                LocalDate dayDate = LocalDate.parse(day);
+                Presence p = empPresences.stream()
+                    .filter(presence -> dayDate.equals(presence.getDate()))
+                    .findFirst()
+                    .orElse(null);
+                attendanceByDay.put(day, p != null ? toMap(p) : null);
+            }
+            
+            record.put("attendances", attendanceByDay);
+            records.add(record);
+        }
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("employees", new ArrayList<>(employeeMap.values()));
+        response.put("days", days);
+        response.put("records", records);
+        return response;
+    }
+
+    public Map<String, Object> getAttendanceStatistics(Long employeeId, String department, LocalDate startDate, LocalDate endDate) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> history = getAttendanceHistory(employeeId, department, startDate, endDate);
+        @SuppressWarnings("unchecked")
+        List<String> days = (List<String>) history.get("days");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> records = (List<Map<String, Object>>) history.get("records");
+
+        Map<String, Long> totals = initializeTotals();
+        Map<String, Map<String, Long>> weeklyMap = new LinkedHashMap<>();
+        List<Map<String, Object>> absencesByEmployee = new ArrayList<>();
+
+        for (Map<String, Object> row : records) {
+            long absences = processRowForStats(row, days, totals, weeklyMap);
+            addAbsenceEntry(row, absences, absencesByEmployee);
+        }
+
+        return buildStatsResponse(totals, absencesByEmployee, weeklyMap);
+    }
+
+    private Map<String, Long> initializeTotals() {
+        Map<String, Long> totals = new LinkedHashMap<>();
+        totals.put("PRESENT", 0L);
+        totals.put("RETARD", 0L);
+        totals.put("ABSENT", 0L);
+        totals.put("EMPTY", 0L);
+        return totals;
+    }
+
+    @SuppressWarnings("unchecked")
+    private long processRowForStats(Map<String, Object> row, List<String> days, 
+                                     Map<String, Long> totals, Map<String, Map<String, Long>> weeklyMap) {
+        long absences = 0;
+        Map<String, Object> attendances = (Map<String, Object>) row.get("attendances");
+
+        for (String day : days) {
+            Map<String, Object> attendance = (Map<String, Object>) attendances.get(day);
+            String statut = attendance == null ? "EMPTY" : attendance.get("statut").toString();
+            updateTotals(totals, statut);
+            if ("ABSENT".equals(statut)) absences++;
+            updateWeeklyStats(weeklyMap, day, statut);
+        }
+        return absences;
+    }
+
+    private void updateTotals(Map<String, Long> totals, String statut) {
+        totals.put(statut, totals.get(statut) + 1);
+    }
+
+    private void updateWeeklyStats(Map<String, Map<String, Long>> weeklyMap, String day, String statut) {
+        String weekKey = getWeekKey(day);
+        weeklyMap.computeIfAbsent(weekKey, key -> createWeekData());
+        Map<String, Long> weekData = weeklyMap.get(weekKey);
+        
+        if ("PRESENT".equals(statut) || "RETARD".equals(statut)) {
+            weekData.put("presents", weekData.get("presents") + 1);
+        }
+        if ("ABSENT".equals(statut)) {
+            weekData.put("absents", weekData.get("absents") + 1);
+        }
+    }
+
+    private Map<String, Long> createWeekData() {
+        Map<String, Long> data = new LinkedHashMap<>();
+        data.put("week", null);
+        data.put("presents", 0L);
+        data.put("absents", 0L);
+        return data;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void addAbsenceEntry(Map<String, Object> row, long absences, 
+                                  List<Map<String, Object>> absencesByEmployee) {
+        Map<String, Object> employee = (Map<String, Object>) row.get("employee");
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("employee", employee);
+        entry.put("absences", absences);
+        absencesByEmployee.add(entry);
+    }
+
+    private Map<String, Object> buildStatsResponse(Map<String, Long> totals,
+                                                    List<Map<String, Object>> absencesByEmployee,
+                                                    Map<String, Map<String, Long>> weeklyMap) {
+        long presentCount = totals.get("PRESENT");
+        long retardCount = totals.get("RETARD");
+        long absentCount = totals.get("ABSENT");
+        long filledCount = presentCount + retardCount + absentCount;
+        long globalPresenceRate = filledCount == 0 ? 0 : Math.round(((presentCount + retardCount) * 100.0) / filledCount);
+
+        List<Map<String, Object>> topAbsentees = absencesByEmployee.stream()
+            .sorted((a, b) -> Long.compare((Long) b.get("absences"), (Long) a.get("absences")))
+            .limit(5)
+            .toList();
+
+        List<Map<String, Object>> weeklyEvolution = weeklyMap.entrySet().stream()
+            .map(entry -> {
+                Map<String, Object> data = new LinkedHashMap<>();
+                data.put("week", entry.getKey());
+                data.put("presents", entry.getValue().get("presents"));
+                data.put("absents", entry.getValue().get("absents"));
+                return data;
+            })
+            .toList();
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("globalPresenceRate", globalPresenceRate);
+        response.put("topAbsentees", topAbsentees);
+        response.put("weeklyEvolution", weeklyEvolution);
+        response.put("totals", totals);
+        return response;
+    }
+
+    private boolean filterByDepartment(Presence p, String department) {
+        return department == null || department.isBlank() 
+            || (p.getEmploye().getDepartement() != null && department.equalsIgnoreCase(p.getEmploye().getDepartement().getNom()));
+    }
+
+    private boolean visibleByRole(Presence p) {
+        if (security.isAdminOrRh()) return true;
+        if (security.isManager()) {
+            Long deptId = security.getCurrentDepartementId();
+            return p.getEmploye().getDepartement() != null && p.getEmploye().getDepartement().getId().equals(deptId);
+        }
+        return p.getEmploye().getId().equals(security.getCurrentEmployeId());
+    }
+
+    private String getWeekKey(String value) {
+        java.time.LocalDate date = java.time.LocalDate.parse(value);
+        java.time.LocalDate firstDay = java.time.LocalDate.of(date.getYear(), 1, 1);
+        long days = java.time.Duration.between(firstDay.atStartOfDay(), date.atStartOfDay()).toDays();
+        long week = (days + firstDay.getDayOfWeek().getValue()) / 7 + 1;
+        return String.format("S%02d", week);
+    }
+
     /**
      * Enregistre un pointage de présence/absence pour un employé.
      * 
@@ -83,6 +295,8 @@ public class PresenceService {
         Employe employe = employeRepo.findById(employeId).orElseThrow();
         if (!security.canAccessEmploye(employeId))
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+        if (employe.getStatut() == com.sigrh.cwa.enums.StatutEmploye.DEPART)
+            throw new IllegalArgumentException("Impossible d'enregistrer une présence pour un employé avec le statut DÉPART");
 
         Presence p = Presence.builder()
             .employe(employe)
@@ -123,6 +337,56 @@ public class PresenceService {
         rapport.put("conges",     list.stream().filter(p -> p.getStatut() == StatutPresence.CONGE).count());
         rapport.put("details",    list.stream().map(this::toMap).collect(Collectors.toList()));
         return rapport;
+    }
+
+    @Cacheable(value = "presenceStats", key = "#employeId + '-' + #periode")
+    public Map<String, Object> computeStats(Long employeId, String periode) {
+        if (!security.canAccessEmploye(employeId))
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+
+        LocalDate start = switch (periode.toUpperCase()) {
+            case "HEBDO" -> LocalDate.now().with(DayOfWeek.MONDAY);
+            case "MENSUEL" -> LocalDate.now().withDayOfMonth(1);
+            default -> throw new IllegalArgumentException("Période invalide: " + periode + " (attendu HEBDO ou MENSUEL)");
+        };
+        LocalDate end = LocalDate.now();
+
+        List<Presence> presences = presenceRepo.findByEmployeIdAndDateBetween(employeId, start, end);
+
+        long nbPresents = presences.stream().filter(p -> p.getStatut() == StatutPresence.PRESENT).count();
+        long nbRetards = presences.stream().filter(p -> p.getStatut() == StatutPresence.RETARD).count();
+        long nbAbsents = presences.stream().filter(p -> p.getStatut() == StatutPresence.ABSENT).count();
+
+        long totalWorkingDays = nbPresents + nbRetards + nbAbsents;
+        double tauxPresence = totalWorkingDays == 0 ? 0.0
+            : Math.round(((nbPresents + nbRetards) * 100.0 / totalWorkingDays) * 100.0) / 100.0;
+
+        double totalHeuresTravaillees = presences.stream()
+            .filter(p -> p.getHeureArrivee() != null && p.getHeureDepart() != null)
+            .mapToDouble(p -> {
+                Duration d = Duration.between(p.getHeureArrivee(), p.getHeureDepart());
+                return Math.abs(d.toMinutes()) / 60.0;
+            })
+            .sum();
+        totalHeuresTravaillees = Math.round(totalHeuresTravaillees * 100.0) / 100.0;
+
+        long joursAvecHeures = presences.stream()
+            .filter(p -> p.getHeureArrivee() != null && p.getHeureDepart() != null)
+            .count();
+        double moyenneHeuresJour = joursAvecHeures == 0 ? 0.0
+            : Math.round((totalHeuresTravaillees / joursAvecHeures) * 100.0) / 100.0;
+
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("employeId", employeId);
+        stats.put("periode", periode.toUpperCase());
+        stats.put("dateDebut", start.toString());
+        stats.put("dateFin", end.toString());
+        stats.put("tauxPresence", tauxPresence);
+        stats.put("nbJoursAbsents", nbAbsents);
+        stats.put("nbRetards", nbRetards);
+        stats.put("totalHeuresTravaillees", totalHeuresTravaillees);
+        stats.put("moyenneHeuresJour", moyenneHeuresJour);
+        return stats;
     }
 
     /**

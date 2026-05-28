@@ -59,6 +59,109 @@ public class DashboardService {
         return dashboard;
     }
 
+    public Map<String, Object> getDashboardKpis() {
+        Map<String, Object> effectifs = getEffectifs();
+        Map<String, Object> absenteisme = getAbsenteisme();
+        Map<String, Object> conges = getStatsConges();
+        Map<String, Object> alertes = getStatsAlertes();
+
+        Map<String, Object> kpis = new LinkedHashMap<>();
+        kpis.put("employesActifs", effectifs.get("actifs"));
+        kpis.put("employesVariation", "+0");
+        kpis.put("tauxPresence", absenteisme.get("tauxMensuel"));
+        kpis.put("presenceVariation", "+0.0%");
+        kpis.put("congesEnAttente", conges.get("enAttente"));
+        kpis.put("congesVariation", "+0");
+        kpis.put("alertesActives", alertes.get("actives"));
+        kpis.put("alertesVariation", "+0");
+        return kpis;
+    }
+
+    public List<Map<String, Object>> getAttendanceStats() {
+        LocalDate now = LocalDate.now();
+        List<Map<String, Object>> stats = new ArrayList<>();
+
+        for (int i = 5; i >= 0; i--) {
+            LocalDate month = now.minusMonths(i);
+            LocalDate start = month.withDayOfMonth(1);
+            LocalDate end = month.withDayOfMonth(month.lengthOfMonth());
+            long presences = presenceRepo.findAll().stream()
+                .filter(p -> !p.getDate().isBefore(start) && !p.getDate().isAfter(end))
+                .filter(p -> p.getStatut() == StatutPresence.PRESENT)
+                .count();
+            long absences = presenceRepo.findAll().stream()
+                .filter(p -> !p.getDate().isBefore(start) && !p.getDate().isAfter(end))
+                .filter(p -> p.getStatut() == StatutPresence.ABSENT)
+                .count();
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("month", month.getMonth().name().substring(0, 3));
+            item.put("presences", presences);
+            item.put("absences", absences);
+            stats.add(item);
+        }
+        return stats;
+    }
+
+    public List<Map<String, Object>> getDepartmentDistribution() {
+        return deptRepo.findAll().stream()
+            .map(d -> {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("name", d.getNom());
+                item.put("value", d.getEmployes().size());
+                return item;
+            })
+            .collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getRiskTrends() {
+        List<Map<String, Object>> trends = new ArrayList<>();
+        Map<String, Object> turnover = getStatsTurnover();
+        double score = turnover.get("scoreMoyen") instanceof Number
+            ? ((Number) turnover.get("scoreMoyen")).doubleValue()
+            : 0.0;
+
+        LocalDate now = LocalDate.now();
+        for (int i = 5; i >= 0; i--) {
+            LocalDate month = now.minusMonths(i);
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("month", month.getMonth().name().substring(0, 3));
+            item.put("score", Math.round(score * 100.0) / 100.0);
+            trends.add(item);
+        }
+        return trends;
+    }
+
+    public List<Map<String, Object>> getRecentLeaves() {
+        return congeRepo.findAll().stream()
+            .sorted(Comparator.comparing(Conge::getDateCreation, Comparator.nullsLast(Comparator.reverseOrder())))
+            .limit(5)
+            .map(c -> {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("id", c.getId());
+                item.put("employe", c.getEmploye() != null ? c.getEmploye().getNom() + " " + c.getEmploye().getPrenom() : "—");
+                item.put("date", c.getDateCreation() != null ? c.getDateCreation().toString() : "");
+                item.put("statut", c.getStatut() != null ? c.getStatut().name() : "");
+                return item;
+            })
+            .collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getRecentAlerts() {
+        return alerteRepo.findAll().stream()
+            .sorted(Comparator.comparing(AlerteRH::getDateAlerte, Comparator.nullsLast(Comparator.reverseOrder())))
+            .limit(5)
+            .map(a -> {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("id", a.getId());
+                item.put("employe", a.getEmploye() != null ? a.getEmploye().getNom() + " " + a.getEmploye().getPrenom() : "—");
+                item.put("type", a.getType() != null ? a.getType().name() : "");
+                item.put("message", a.getMessage());
+                item.put("date", a.getDateAlerte() != null ? a.getDateAlerte().toString() : "");
+                return item;
+            })
+            .collect(Collectors.toList());
+    }
+
     private Map<String, Object> getEffectifs() {
         List<Employe> all = employeRepo.findAll();
         Map<String, Object> m = new LinkedHashMap<>();
