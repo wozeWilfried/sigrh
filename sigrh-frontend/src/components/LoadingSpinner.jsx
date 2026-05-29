@@ -1,11 +1,13 @@
-export default function LoadingSpinner({ size = 'md' }) {
+export default function LoadingSpinner({ size = 'md', className = '' }) {
   const sizes = {
-    sm: 'h-5 w-5',
-    md: 'h-8 w-8',
-    lg: 'h-12 w-12',
+    sm: 'h-4 w-4',
+    md: 'h-7 w-7',
+    lg: 'h-10 w-10',
   }
 
   return (
-    <div className={`${sizes[size]} animate-spin rounded-full border-2 border-blue-deep border-t-transparent`} />
+    <div
+      className={`${sizes[size]} animate-spin rounded-full border-2 border-current border-t-transparent opacity-40 ${className}`}
+    />
   )
 }
