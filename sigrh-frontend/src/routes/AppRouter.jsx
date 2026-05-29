@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import useAuth from '../hooks/useAuth'
 import Login from '../pages/Login'
 import ProtectedRoute from '../components/ProtectedRoute'
@@ -29,8 +30,12 @@ export default function AppRouter() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-50">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-blue-deep border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+          className="h-8 w-8 rounded-full border-2 border-blue-700 border-t-transparent"
+        />
       </div>
     )
   }
