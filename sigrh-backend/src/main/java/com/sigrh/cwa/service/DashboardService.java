@@ -3,6 +3,7 @@ package com.sigrh.cwa.service;
 import com.sigrh.cwa.entity.*;
 import com.sigrh.cwa.enums.*;
 import com.sigrh.cwa.repository.*;
+import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.time.*;
@@ -34,6 +35,7 @@ public class DashboardService {
     private final AlerteRHRepository alerteRepo;
     private final MaterielRepository materielRepo;
     private final ContratRepository contratRepo;
+    private final SecurityHelper security;
 
     /**
      * Génére un tableau de bord complet avec toutes les statistiques RH.
@@ -60,21 +62,79 @@ public class DashboardService {
     }
 
     public Map<String, Object> getDashboardKpis() {
+        Set<Long> visibleIds = getVisibleEmployeIds();
+
         Map<String, Object> effectifs = getEffectifs();
         Map<String, Object> absenteisme = getAbsenteisme();
-        Map<String, Object> conges = getStatsConges();
         Map<String, Object> alertes = getStatsAlertes();
+
+        long congesEnAttente = congeRepo.findAll().stream()
+            .filter(c -> c.getEmploye() != null && visibleIds.contains(c.getEmploye().getId()))
+            .filter(c -> c.getStatut() == StatutConge.EN_ATTENTE)
+            .count();
 
         Map<String, Object> kpis = new LinkedHashMap<>();
         kpis.put("employesActifs", effectifs.get("actifs"));
         kpis.put("employesVariation", "+0");
         kpis.put("tauxPresence", absenteisme.get("tauxMensuel"));
         kpis.put("presenceVariation", "+0.0%");
-        kpis.put("congesEnAttente", conges.get("enAttente"));
+        kpis.put("congesEnAttente", congesEnAttente);
         kpis.put("congesVariation", "+0");
         kpis.put("alertesActives", alertes.get("actives"));
         kpis.put("alertesVariation", "+0");
         return kpis;
+    }
+
+    public List<Map<String, Object>> getEvolution(int annee, String departement) {
+        List<Map<String, Object>> evolution = new ArrayList<>();
+
+        List<Employe> allEmployes = employeRepo.findAll().stream()
+            .filter(this::visibleByRole).collect(Collectors.toList());
+        List<Employe> employes = (departement != null && !departement.isBlank())
+            ? allEmployes.stream()
+                .filter(e -> e.getDepartement() != null
+                    && departement.equalsIgnoreCase(e.getDepartement().getNom()))
+                .collect(Collectors.toList())
+            : allEmployes;
+
+        Set<Long> employeIds = employes.stream().map(Employe::getId).collect(Collectors.toSet());
+
+        for (int m = 1; m <= 12; m++) {
+            LocalDate debut = LocalDate.of(annee, m, 1);
+            LocalDate fin = debut.withDayOfMonth(debut.lengthOfMonth());
+
+            List<Presence> monthPresences = presenceRepo.findAll().stream()
+                .filter(p -> !p.getDate().isBefore(debut) && !p.getDate().isAfter(fin))
+                .filter(p -> p.getEmploye() != null && employeIds.contains(p.getEmploye().getId()))
+                .collect(Collectors.toList());
+
+            long nbPresences = monthPresences.stream()
+                .filter(p -> p.getStatut() == StatutPresence.PRESENT).count();
+            long nbAbsences = monthPresences.stream()
+                .filter(p -> p.getStatut() == StatutPresence.ABSENT).count();
+
+            long nbConges = congeRepo.findAll().stream()
+                .filter(c -> c.getDateDebut() != null
+                    && !c.getDateDebut().isBefore(debut)
+                    && !c.getDateDebut().isAfter(fin))
+                .filter(c -> c.getEmploye() != null && employeIds.contains(c.getEmploye().getId()))
+                .count();
+
+            double scoreRisqueMoyen = employes.stream()
+                .mapToDouble(this::calculerScoreRapide)
+                .average()
+                .orElse(0.0);
+            scoreRisqueMoyen = Math.round(scoreRisqueMoyen * 100.0) / 100.0;
+
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("mois", debut.getMonth().name().substring(0, 3));
+            item.put("nbPresences", nbPresences);
+            item.put("nbAbsences", nbAbsences);
+            item.put("nbConges", nbConges);
+            item.put("scoreRisqueMoyen", scoreRisqueMoyen);
+            evolution.add(item);
+        }
+        return evolution;
     }
 
     public List<Map<String, Object>> getAttendanceStats() {
@@ -133,6 +193,7 @@ public class DashboardService {
 
     public List<Map<String, Object>> getRecentLeaves() {
         return congeRepo.findAll().stream()
+            .filter(c -> c.getEmploye() != null && visibleByRole(c.getEmploye()))
             .sorted(Comparator.comparing(Conge::getDateCreation, Comparator.nullsLast(Comparator.reverseOrder())))
             .limit(5)
             .map(c -> {
@@ -148,6 +209,7 @@ public class DashboardService {
 
     public List<Map<String, Object>> getRecentAlerts() {
         return alerteRepo.findAll().stream()
+            .filter(a -> a.getEmploye() != null && visibleByRole(a.getEmploye()))
             .sorted(Comparator.comparing(AlerteRH::getDateAlerte, Comparator.nullsLast(Comparator.reverseOrder())))
             .limit(5)
             .map(a -> {
@@ -163,7 +225,8 @@ public class DashboardService {
     }
 
     private Map<String, Object> getEffectifs() {
-        List<Employe> all = employeRepo.findAll();
+        List<Employe> all = employeRepo.findAll().stream()
+            .filter(this::visibleByRole).collect(Collectors.toList());
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("total", all.size());
         m.put("actifs", all.stream().filter(e -> e.getStatut() == StatutEmploye.ACTIF).count());
@@ -430,7 +493,9 @@ public class DashboardService {
     }
 
     private Map<String, Object> getStatsAlertes() {
-        List<AlerteRH> all = alerteRepo.findAll();
+        List<AlerteRH> all = alerteRepo.findAll().stream()
+            .filter(a -> a.getEmploye() != null && visibleByRole(a.getEmploye()))
+            .collect(Collectors.toList());
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("actives", all.stream().filter(a -> !a.isTraitee()).count());
         m.put("traitees", all.stream().filter(AlerteRH::isTraitee).count());
@@ -439,6 +504,22 @@ public class DashboardService {
             .collect(Collectors.groupingBy(a -> a.getType().name(), Collectors.counting()));
         m.put("parType", parType);
         return m;
+    }
+
+    private boolean visibleByRole(Employe emp) {
+        if (security.isAdminOrRh()) return true;
+        if (security.isManager()) {
+            return emp.getDepartement() != null
+                && emp.getDepartement().getId().equals(security.getCurrentDepartementId());
+        }
+        return emp.getId().equals(security.getCurrentEmployeId());
+    }
+
+    private Set<Long> getVisibleEmployeIds() {
+        return employeRepo.findAll().stream()
+            .filter(this::visibleByRole)
+            .map(Employe::getId)
+            .collect(Collectors.toSet());
     }
 
     private Map<String, Object> getStatsTurnover() {

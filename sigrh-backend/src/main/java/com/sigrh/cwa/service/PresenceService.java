@@ -41,7 +41,7 @@ public class PresenceService {
         List<Presence> list = date != null
             ? presenceRepo.findByDate(date)
             : presenceRepo.findAll();
-        if (security.isAdminOrRh()) {
+        if (security.isAdminOrRhOrSecretaire()) {
             return list.stream().map(this::toMap).collect(Collectors.toList());
         }
         if (security.isManager()) {
@@ -267,7 +267,7 @@ public class PresenceService {
     }
 
     private boolean visibleByRole(Presence p) {
-        if (security.isAdminOrRh()) return true;
+        if (security.isAdminOrRhOrSecretaire()) return true;
         if (security.isManager()) {
             Long deptId = security.getCurrentDepartementId();
             return p.getEmploye().getDepartement() != null && p.getEmploye().getDepartement().getId().equals(deptId);
@@ -298,9 +298,16 @@ public class PresenceService {
         if (employe.getStatut() == com.sigrh.cwa.enums.StatutEmploye.DEPART)
             throw new IllegalArgumentException("Impossible d'enregistrer une présence pour un employé avec le statut DÉPART");
 
+        LocalDate date = LocalDate.parse(data.get("date").toString());
+        if (date.isAfter(LocalDate.now()))
+            throw new IllegalArgumentException("La date de présence ne peut pas être dans le futur");
+
+        if (presenceRepo.findByEmployeIdAndDate(employeId, date).isPresent())
+            throw new IllegalStateException("Une présence existe déjà pour cet employé à cette date");
+
         Presence p = Presence.builder()
             .employe(employe)
-            .date(LocalDate.parse(data.get("date").toString()))
+            .date(date)
             .statut(StatutPresence.valueOf(data.get("statut").toString()))
             .build();
 
@@ -309,7 +316,13 @@ public class PresenceService {
         if (data.get("heureDepart") != null)
             p.setHeureDepart(java.time.LocalTime.parse(data.get("heureDepart").toString()));
 
-        return toMap(presenceRepo.save(p));
+        Map<String, Object> result = toMap(presenceRepo.save(p));
+        if (p.getHeureArrivee() != null && p.getHeureDepart() != null) {
+            Duration d = Duration.between(p.getHeureArrivee(), p.getHeureDepart());
+            double heures = Math.round(Math.abs(d.toMinutes()) / 60.0 * 100.0) / 100.0;
+            result.put("nbHeuresTravaillees", heures);
+        }
+        return result;
     }
 
     /**

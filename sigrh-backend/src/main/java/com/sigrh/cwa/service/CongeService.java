@@ -8,6 +8,7 @@ import com.sigrh.cwa.enums.StatutEmploye;
 import com.sigrh.cwa.enums.TypeConge;
 import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
@@ -79,9 +80,18 @@ public class CongeService {
      * @return Liste des congés avec le statut spécifié
      */
     public List<CongeDTO> findByStatut(String statut) {
-        if (!security.isAdminOrRh())
-            throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
-        return congeRepo.findByStatut(StatutConge.valueOf(statut)).stream().map(this::toDTO).collect(Collectors.toList());
+        List<Conge> all = congeRepo.findByStatut(StatutConge.valueOf(statut));
+        if (security.isAdminOrRh()) {
+            return all.stream().map(this::toDTO).collect(Collectors.toList());
+        }
+        if (security.isManager()) {
+            Long deptId = security.getCurrentDepartementId();
+            return all.stream()
+                .filter(c -> c.getEmploye() != null && c.getEmploye().getDepartement() != null
+                    && c.getEmploye().getDepartement().getId().equals(deptId))
+                .map(this::toDTO).collect(Collectors.toList());
+        }
+        throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
     }
 
     /**
@@ -124,6 +134,14 @@ public class CongeService {
     @Transactional
     public CongeDTO valider(Long id, String statut, String commentaire) {
         Conge conge = congeRepo.findById(id).orElseThrow();
+        if (!security.isAdminOrRh()) {
+            if (!security.isManager()) throw new AccessDeniedException("Accès refusé");
+            Long deptId = conge.getEmploye() != null
+                ? conge.getEmploye().getDepartement() != null ? conge.getEmploye().getDepartement().getId() : null
+                : null;
+            if (deptId == null || !deptId.equals(security.getCurrentDepartementId()))
+                throw new AccessDeniedException("Accès refusé : cet employé n'est pas dans votre département");
+        }
         conge.setStatut(StatutConge.valueOf(statut));
         conge.setCommentaireRH(commentaire);
         return toDTO(congeRepo.save(conge));

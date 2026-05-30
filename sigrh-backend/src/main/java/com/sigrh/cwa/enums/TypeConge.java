@@ -12,5 +12,5 @@ package com.sigrh.cwa.enums;
  * @version 1.0
  */
 public enum TypeConge {
-    ANNUEL, MALADIE, MATERNITE, SANS_SOLDE
+    ANNUEL, MALADIE, MATERNITE, SANS_SOLDE, EXCEPTIONNEL
 }

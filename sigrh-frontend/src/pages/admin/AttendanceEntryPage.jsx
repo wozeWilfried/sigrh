@@ -1,10 +1,11 @@
-import { memo } from 'react'
+import { memo, useMemo, useState } from 'react'
 import {
   CalendarDays,
   CheckCircle2,
-  Clock3,
+  ChevronDown,
   Loader2,
   Save,
+  Search,
   UserRound,
   XCircle,
 } from 'lucide-react'
@@ -33,6 +34,25 @@ function AttendanceEntryPage() {
     clearToast,
   } = useAttendances()
 
+  const [search, setSearch] = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState('')
+
+  const departments = useMemo(() => {
+    const depts = new Set(rows.map((r) => r.employee.departementNom).filter(Boolean))
+    return [ '', ...Array.from(depts).sort() ]
+  }, [rows])
+
+  const filteredRows = useMemo(() => {
+    return rows.filter((row) => {
+      if (search) {
+        const name = `${row.employee.prenom} ${row.employee.nom}`.toLowerCase()
+        if (!name.includes(search.toLowerCase())) return false
+      }
+      if (departmentFilter && row.employee.departementNom !== departmentFilter) return false
+      return true
+    })
+  }, [rows, search, departmentFilter])
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -49,16 +69,24 @@ function AttendanceEntryPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <InfoBadge value={`${rows.length} employés`} />
+              <InfoBadge value={`${filteredRows.length} employés`} />
               <InfoBadge value={`${dirtyCount} modifié(s)`} />
               {errorsCount > 0 && <InfoBadge danger value={`${errorsCount} erreur(s)`} />}
             </div>
           </div>
 
+          <FilterBar
+            search={search}
+            onSearchChange={setSearch}
+            departmentFilter={departmentFilter}
+            onDepartmentChange={setDepartmentFilter}
+            departments={departments}
+          />
+
           {loading ? (
             <AttendanceSkeleton />
           ) : (
-            <AttendanceTable rows={rows} onChange={updateRow} />
+            <AttendanceTable rows={filteredRows} onChange={updateRow} />
           )}
         </section>
 
@@ -115,6 +143,42 @@ function Header({ date, onDateChange }) {
   )
 }
 
+function FilterBar({ search, onSearchChange, departmentFilter, onDepartmentChange, departments }) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 border-b border-slate-100 bg-slate-50/50 px-5 py-3">
+      <div className="relative min-w-[200px] flex-1">
+        <Search
+          size={16}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+        />
+        <input
+          type="text"
+          placeholder="Rechercher un employé..."
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-9 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition-colors focus:border-blue-deep/30 focus:ring-3 focus:ring-blue-deep/10"
+        />
+      </div>
+      <div className="relative w-48">
+        <select
+          value={departmentFilter}
+          onChange={(e) => onDepartmentChange(e.target.value)}
+          className="h-9 w-full appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-sm outline-none transition-colors focus:border-blue-deep/30 focus:ring-3 focus:ring-blue-deep/10"
+        >
+          <option value="">Tous les départements</option>
+          {departments.filter(Boolean).map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+        <ChevronDown
+          size={14}
+          className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+        />
+      </div>
+    </div>
+  )
+}
+
 function AttendanceTable({ rows, onChange }) {
   if (!rows.length) {
     return (
@@ -133,7 +197,7 @@ function AttendanceTable({ rows, onChange }) {
       <table className="min-w-full divide-y divide-slate-100">
         <thead className="bg-slate-50/80">
           <tr>
-            {['Employé', 'Heure arrivée', 'Heure départ', 'Statut', 'État'].map((heading) => (
+            {['Employé', 'Département', 'Heure arrivée', 'Heure départ', 'Statut', 'État'].map((heading) => (
               <th
                 key={heading}
                 className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-500"
@@ -160,7 +224,7 @@ const AttendanceRow = memo(function AttendanceRow({ row, onChange }) {
 
   return (
     <tr className={`transition-colors ${values.dirty ? 'bg-blue-50/40' : 'hover:bg-slate-50/80'}`}>
-      <td className="min-w-[260px] px-5 py-4">
+      <td className="min-w-[220px] px-5 py-4">
         <div className="flex items-center gap-3">
           <Avatar employee={employee} fallbackName={fullName} />
           <div>
@@ -168,6 +232,9 @@ const AttendanceRow = memo(function AttendanceRow({ row, onChange }) {
             <p className="mt-0.5 text-sm text-slate-500">{employee.poste || employee.email}</p>
           </div>
         </div>
+      </td>
+      <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
+        {employee.departementNom || '-'}
       </td>
       <td className="px-5 py-4">
         <TimeInput

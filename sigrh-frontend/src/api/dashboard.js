@@ -56,6 +56,14 @@ const MOCK_RECENT_LEAVES = [
   { id: 5, employe: 'Emma Petit', date: '2023-11-09', statut: 'APPROUVE' },
 ]
 
+const MOCK_EVOLUTION = Array.from({ length: 12 }, (_, i) => ({
+  mois: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'][i],
+  nbPresences: Math.floor(Math.random() * 30 + 70),
+  nbAbsences: Math.floor(Math.random() * 8 + 2),
+  nbConges: Math.floor(Math.random() * 5 + 1),
+  scoreRisqueMoyen: Math.round((Math.random() * 20 + 15) * 100) / 100,
+}))
+
 const MOCK_RECENT_ALERTS = [
   { id: 1, employe: 'Julien Morel', type: 'CRITICAL', message: 'Risque de turnover élevé (89%)', date: 'Il y a 2h' },
   { id: 2, employe: 'Sarah Kone', type: 'WARNING', message: 'Absence prolongée (3 jours)', date: 'Il y a 5h' },
@@ -129,5 +137,18 @@ export async function getRecentAlerts() {
     if (!shouldUseFallback(error)) throw error
     await wait()
     return MOCK_RECENT_ALERTS
+  }
+}
+
+export async function getEvolution(annee = 2025, departement = '') {
+  try {
+    const params = { annee }
+    if (departement) params.departement = departement
+    const response = await api.get('/dashboard/evolution', { params })
+    return response.data
+  } catch (error) {
+    if (!shouldUseFallback(error)) throw error
+    await wait()
+    return MOCK_EVOLUTION
   }
 }

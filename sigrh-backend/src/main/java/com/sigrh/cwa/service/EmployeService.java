@@ -99,7 +99,7 @@ public class EmployeService {
 
     private List<Employe> getAccessibleEmployees() {
         List<Employe> all = employeRepo.findAll();
-        if (security.isAdminOrRh()) {
+        if (security.isAdminOrRhOrSecretaire()) {
             return all;
         }
         if (security.isManager()) {

@@ -137,6 +137,7 @@ public class SecurityHelper {
     public boolean canAccessEmploye(Long employeId) {
         if (employeId == null) return false;
         if (isAdminOrRh()) return true;
+        if (isSecretaire()) return true;
         if (isManager() && isSameDepartement(employeId)) return true;
         return isSelf(employeId);
     }

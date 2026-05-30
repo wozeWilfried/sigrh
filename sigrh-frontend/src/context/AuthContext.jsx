@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
-import { loginUser } from '../api/auth'
+import { loginUser, logoutUser } from '../api/auth'
 
 export const AuthContext = createContext(null)
 
@@ -19,11 +19,13 @@ export function AuthProvider({ children }) {
           setUser(parsed)
         } else {
           localStorage.removeItem('token')
+          localStorage.removeItem('refreshToken')
           localStorage.removeItem('user')
         }
       }
     } catch {
       localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
       localStorage.removeItem('user')
     }
     setLoading(false)
@@ -36,8 +38,10 @@ export function AuthProvider({ children }) {
       role: data.role,
       username: data.username,
       employeId: data.employeId,
+      departementId: data.departementId,
     }
     localStorage.setItem('token', data.token)
+    localStorage.setItem('refreshToken', data.refreshToken)
     localStorage.setItem('user', JSON.stringify(userData))
     setToken(data.token)
     setUser(userData)
@@ -45,7 +49,13 @@ export function AuthProvider({ children }) {
   }, [])
 
   const logout = useCallback(() => {
+    const currentToken = localStorage.getItem('token')
+    const currentRefresh = localStorage.getItem('refreshToken')
+    if (currentToken || currentRefresh) {
+      logoutUser(currentToken, currentRefresh).catch(() => {})
+    }
     localStorage.removeItem('token')
+    localStorage.removeItem('refreshToken')
     localStorage.removeItem('user')
     setToken(null)
     setUser(null)
