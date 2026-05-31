@@ -1,6 +1,6 @@
 package com.sigrh.cwa.controller;
 
-import com.sigrh.cwa.dto.EmployeDTO;
+import com.sigrh.cwa.dto.*;
 import com.sigrh.cwa.service.EmployeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
@@ -11,6 +11,8 @@ import java.util.Map;
 /**
  * Contrôleur REST pour la gestion des employés.
  * Permet de créer, modifier, consulter et supprimer les employés.
+ * La création d'un employé génère automatiquement un compte utilisateur
+ * avec mot de passe temporaire envoyé par email.
  * 
  * Point de terminaison: /api/employes
  * 
@@ -58,10 +60,10 @@ public class EmployeController {
     }
 
     /**
-     * Recherche des employés selon différents critéres.
+     * Recherche des employés selon différents critères.
      * 
      * @param q Texte de recherche
-     * @return Liste des employés correspondant au critére
+     * @return Liste des employés correspondant au critère
      */
     @GetMapping("/search")
     public ResponseEntity<List<EmployeDTO>> search(@RequestParam String q) {
@@ -69,13 +71,15 @@ public class EmployeController {
     }
 
     /**
-     * Crée un nouvel employé dans le système.
+     * Crée un nouvel employé avec son compte utilisateur.
+     * Un mot de passe temporaire est généré et envoyé par email.
+     * L'employé devra changer son mot de passe à la première connexion.
      * 
      * @param dto Données du nouvel employé
-     * @return EmployeDTO avec l'identifiant assigné
+     * @return CreateEmployeResponse avec l'employé créé, le mot de passe temporaire et un message
      */
     @PostMapping
-    public ResponseEntity<EmployeDTO> create(@RequestBody EmployeDTO dto) {
+    public ResponseEntity<CreateEmployeResponse> create(@RequestBody EmployeDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(employeService.create(dto));
     }
 
@@ -91,12 +95,6 @@ public class EmployeController {
         return ResponseEntity.ok(employeService.update(id, dto));
     }
 
-    /**
-     * Supprime un employé du système.
-     * 
-     * @param id Identifiant de l'employé à supprimer
-     * @return Pas de contenu en retour
-     */
     /**
      * Modifie le statut d'un employé.
      *
