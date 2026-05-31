@@ -13,3 +13,8 @@ export async function refreshTokenCall(refreshToken) {
 export async function logoutUser(accessToken, refreshToken) {
   await api.post('/auth/logout', { accessToken, refreshToken })
 }
+
+export async function changePassword({ currentPassword, newPassword }) {
+  const response = await api.post('/auth/change-password', { currentPassword, newPassword })
+  return response.data
+}

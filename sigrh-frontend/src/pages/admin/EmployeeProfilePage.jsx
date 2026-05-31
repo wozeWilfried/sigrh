@@ -8,14 +8,18 @@ import {
   ChevronRight,
   Clock3,
   Hourglass,
+  KeyRound,
+  Loader2,
   Mail,
   Pencil,
   Phone,
+  ShieldCheck,
   Timer,
   Umbrella,
   UserRound,
 } from 'lucide-react'
 import AppLayout from '../../components/layout/AppLayout'
+import useAuth from '../../hooks/useAuth'
 import {
   getAIScore,
   getAttendances,
@@ -58,6 +62,7 @@ const leaveStatusStyles = {
 export default function EmployeeProfilePage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user, changePassword } = useAuth()
   const [activeTab, setActiveTab] = useState('infos')
   const [employee, setEmployee] = useState(null)
   const [employeeLoading, setEmployeeLoading] = useState(true)
@@ -171,9 +176,16 @@ export default function EmployeeProfilePage() {
     )
   }
 
+  const isOwnProfile = user?.employeId && Number(id) === Number(user.employeId)
+  const needsPasswordChange = isOwnProfile && user?.firstLogin
+
   return (
     <AppLayout>
       <div className="space-y-6">
+        {needsPasswordChange && (
+          <ChangePasswordBanner changePassword={changePassword} />
+        )}
+
         <ProfileHeader employee={employee} />
 
         <Card className="p-2">
@@ -524,6 +536,116 @@ function ProgressMetric({ value, tone = 'success' }) {
         <div className={`h-full rounded-full ${colors[tone]}`} style={{ width: `${Math.max(0, Math.min(value, 100))}%` }} />
       </div>
     </div>
+  )
+}
+
+function ChangePasswordBanner({ changePassword }) {
+  const [form, setForm] = useState({ newPassword: '', confirmPassword: '' })
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+
+    if (!form.newPassword || form.newPassword.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères')
+      return
+    }
+    if (form.newPassword !== form.confirmPassword) {
+      setError('Les mots de passe ne correspondent pas')
+      return
+    }
+
+    setLoading(true)
+    try {
+      await changePassword({ currentPassword: '', newPassword: form.newPassword })
+      setSuccess(true)
+    } catch {
+      setError('Erreur lors du changement de mot de passe.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (success) {
+    return (
+      <Card className="border-emerald-200 bg-emerald-50 p-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+            <ShieldCheck size={20} />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-emerald-800">Mot de passe modifié avec succès</p>
+            <p className="text-sm text-emerald-600">Vous pouvez maintenant accéder à votre espace.</p>
+          </div>
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="border-amber-200 bg-amber-50 p-5">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+            <KeyRound size={20} />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-bold text-amber-800">Première connexion - Changez votre mot de passe</p>
+            <p className="text-sm text-amber-700">
+              Pour des raisons de sécurité, veuillez définir un nouveau mot de passe.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor="bp-newPassword" className="mb-1 block text-xs font-semibold text-amber-800">
+              Nouveau mot de passe
+            </label>
+            <input
+              id="bp-newPassword"
+              type="password"
+              value={form.newPassword}
+              onChange={(e) => setForm((p) => ({ ...p, newPassword: e.target.value }))}
+              placeholder="Minimum 6 caractères"
+              className="block w-full rounded-xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-amber-500 focus:shadow-[0_0_0_3px_rgba(217,119,6,0.1)]"
+              autoFocus
+            />
+          </div>
+          <div>
+            <label htmlFor="bp-confirmPassword" className="mb-1 block text-xs font-semibold text-amber-800">
+              Confirmer le mot de passe
+            </label>
+            <input
+              id="bp-confirmPassword"
+              type="password"
+              value={form.confirmPassword}
+              onChange={(e) => setForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+              placeholder="Retapez le mot de passe"
+              className="block w-full rounded-xl border-2 border-amber-200 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-amber-500 focus:shadow-[0_0_0_3px_rgba(217,119,6,0.1)]"
+            />
+          </div>
+        </div>
+
+        {error && (
+          <p className="text-sm font-semibold text-red-600">{error}</p>
+        )}
+
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-bold text-white shadow-sm transition-colors hover:bg-amber-700 disabled:opacity-60"
+          >
+            {loading && <Loader2 size={16} className="animate-spin" />}
+            {loading ? 'Modification...' : 'Changer le mot de passe'}
+          </button>
+        </div>
+      </form>
+    </Card>
   )
 }
 

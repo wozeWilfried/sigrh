@@ -56,4 +56,7 @@ public class EmployeDTO {
 
     /** Statut (ACTIF, INACTIF, SUSPENDU) */
     private String statut;
+
+    /** Rôle utilisateur (EMPLOYE, MANAGER, SECRETAIRE) pour la création du compte */
+    private String role;
 }

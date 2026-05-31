@@ -1,12 +1,15 @@
 package com.sigrh.cwa.service;
 
-import com.sigrh.cwa.dto.EmployeDTO;
+import com.sigrh.cwa.dto.*;
 import com.sigrh.cwa.entity.*;
 import com.sigrh.cwa.repository.*;
 import com.sigrh.cwa.enums.Genre;
+import com.sigrh.cwa.enums.Role;
 import com.sigrh.cwa.enums.StatutEmploye;
+import com.sigrh.cwa.security.PasswordGenerator;
 import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
@@ -18,7 +21,7 @@ import static com.sigrh.cwa.enums.StatutEmploye.*;
 /**
  * Service de gestion des employés.
  * Permet de:
- * - Ajouter et modifier les données des employés
+ * - Ajouter et modifier les données des employés (avec création automatique du compte utilisateur)
  * - Rechercher les employés
  * - Gérer les statuts (actif, inactif, suspendu)
  * - Filtrer l'accès selon les permissions
@@ -31,7 +34,10 @@ import static com.sigrh.cwa.enums.StatutEmploye.*;
 public class EmployeService {
 
     private final EmployeRepository employeRepo;
+    private final UserRepository userRepo;
     private final DepartementRepository deptRepo;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
     private final SecurityHelper security;
 
     /**
@@ -128,7 +134,7 @@ public class EmployeService {
     }
 
     /**
-     * Recherche des employés selon différents critéres (nom, email, téléphone).
+     * Recherche des employés selon différents critères (nom, email, téléphone).
      * Opération réservée aux administrateurs et RH.
      * 
      * @param query Texte de recherche
@@ -141,18 +147,85 @@ public class EmployeService {
     }
 
     /**
-     * Crée un nouvel employé dans le système.
-     * 
+     * Crée un nouvel employé avec son compte utilisateur.
+     * Gère la génération du mot de passe, la création du compte User lié,
+     * et l'envoi des identifiants par email.
+     * <p>
+     * Pour les rôles MANAGER et SECRETAIRE (ayant une interface dédiée),
+     * le mot de passe temporaire est envoyé par email.
+     * Pour les autres rôles (EMPLOYE par défaut), un simple message
+     * de bienvenue est envoyé sans mot de passe.
+     *
      * @param dto Données du nouvel employé
-     * @return EmployeDTO avec l'identifiant assigné
+     * @return CreateEmployeResponse avec l'employé créé et le mot de passe temporaire
      */
     @Transactional
-    public EmployeDTO create(EmployeDTO dto) {
+    public CreateEmployeResponse create(EmployeDTO dto) {
+        String nom = dto.getNom() != null ? dto.getNom().toLowerCase() : "employe";
+        String prenom = dto.getPrenom() != null ? dto.getPrenom().toLowerCase() : "nouveau";
+        String baseUsername = (prenom + "." + nom).replaceAll("[^a-z.]", "");
+        String username = baseUsername;
+        int suffix = 1;
+        while (userRepo.existsByUsername(username)) {
+            username = baseUsername + suffix;
+            suffix++;
+        }
+
+        String email = dto.getEmail();
+        if (email == null || email.isBlank()) {
+            email = username + "@sigrh.com";
+        } else if (userRepo.existsByEmail(email)) {
+            throw new RuntimeException("Un employé avec cet email existe déjà : " + email);
+        }
+
+        String rawPassword = PasswordGenerator.generate();
+
+        Role role = Role.EMPLOYE;
+        if (dto.getRole() != null && !dto.getRole().isBlank()) {
+            try {
+                role = Role.valueOf(dto.getRole().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                role = Role.EMPLOYE;
+            }
+        }
+        boolean needsCredentials = role == Role.MANAGER || role == Role.SECRETAIRE;
+
+        User user = User.builder()
+            .username(username)
+            .password(passwordEncoder.encode(rawPassword))
+            .email(email)
+            .role(role)
+            .active(true)
+            .firstLogin(needsCredentials)
+            .build();
+        user = userRepo.save(user);
+
         Employe e = toEntity(dto);
         if (e.getMatricule() == null || e.getMatricule().isBlank()) {
             e.setMatricule(generateMatricule());
         }
-        return toDTO(employeRepo.save(e));
+        e.setEmail(email);
+        e.setUser(user);
+        e = employeRepo.save(e);
+
+        user.setEmploye(e);
+        userRepo.save(user);
+
+        if (needsCredentials) {
+            emailService.sendCredentials(email, username, rawPassword);
+        } else {
+            emailService.sendWelcomeMessage(email, username);
+        }
+
+        String message = needsCredentials
+            ? "Employé créé avec succès. Identifiants envoyés à " + email
+            : "Employé créé avec succès. Un email de bienvenue a été envoyé à " + email;
+
+        return CreateEmployeResponse.builder()
+            .employe(toDTO(e))
+            .tempPassword(rawPassword)
+            .message(message)
+            .build();
     }
 
     private String generateMatricule() {
@@ -218,7 +291,7 @@ public class EmployeService {
         Set<StatutEmploye> allowed = VALID_TRANSITIONS.get(current);
         if (allowed == null || !allowed.contains(target)) {
             throw new IllegalArgumentException(
-                "Transition de statut invalide : " + current + " → " + target
+                "Transition de statut invalide : " + current + " \u2192 " + target
             );
         }
 
@@ -232,7 +305,13 @@ public class EmployeService {
      * @param id Identifiant de l'employé à supprimer
      */
     @Transactional
-    public void delete(Long id) { employeRepo.deleteById(id); }
+    public void delete(Long id) {
+        Employe emp = employeRepo.findById(id).orElseThrow();
+        if (emp.getUser() != null) {
+            userRepo.delete(emp.getUser());
+        }
+        employeRepo.deleteById(id);
+    }
 
     private EmployeDTO toDTO(Employe e) {
         return EmployeDTO.builder()
@@ -253,7 +332,7 @@ public class EmployeService {
         e.setMatricule(dto.getMatricule());
         e.setNom(dto.getNom()); e.setPrenom(dto.getPrenom());
         e.setEmail(dto.getEmail()); e.setTelephone(dto.getTelephone());
-        if (dto.getGenre() != null) e.setGenre(Genre.valueOf(dto.getGenre()));
+        if (dto.getGenre() != null && !dto.getGenre().isBlank()) e.setGenre(Genre.valueOf(dto.getGenre()));
         e.setDateNaissance(dto.getDateNaissance());
         e.setDateEmbauche(dto.getDateEmbauche());
         e.setPoste(dto.getPoste()); e.setSalaire(dto.getSalaire());

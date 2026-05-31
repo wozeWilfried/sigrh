@@ -42,6 +42,10 @@ public class User {
     /** Indique si le compte est actif */
     private boolean active = true;
 
+    /** Indique si l'utilisateur doit changer son mot de passe à la première connexion */
+    @Builder.Default
+    private boolean firstLogin = true;
+
     /** Employé associé (optionnel pour les admins) */
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("user")

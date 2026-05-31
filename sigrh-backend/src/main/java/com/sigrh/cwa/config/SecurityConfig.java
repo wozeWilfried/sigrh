@@ -46,7 +46,7 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // ── PUBLIQUE ──
-                .requestMatchers("/api/auth/**", "/api-docs/**", "/swagger-ui/**",
+                .requestMatchers("/api/auth/login", "/api-docs/**", "/swagger-ui/**",
                     "/swagger-ui.html", "/webjars/**", "/v3/api-docs/**").permitAll()
 
                 // ── ADMIN UNIQUEMENT (règles spécifiques AVANT les règles générales) ──
