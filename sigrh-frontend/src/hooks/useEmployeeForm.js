@@ -15,6 +15,7 @@ const initialValues = {
   dateEmbauche: '',
   salaire: '',
   statut: 'ACTIF',
+  role: 'EMPLOYE',
 }
 
 const requiredMessages = {
@@ -73,6 +74,7 @@ function buildEmployeePayload(values) {
     dateEmbauche: values.dateEmbauche || null,
     salaire: values.salaire === '' ? null : Number(values.salaire),
     statut: values.statut || 'ACTIF',
+    role: values.role || 'EMPLOYE',
   }
 }
 
@@ -185,24 +187,32 @@ export default function useEmployeeForm(employeeId) {
     try {
       const payload = buildEmployeePayload(values)
 
+      let response
       if (mode === 'EDIT') {
         await updateEmployee(employeeId, payload)
+        setToast({
+          type: 'success',
+          message: 'Employé modifié avec succès.',
+        })
       } else {
-        await createEmployee(payload)
+        response = await createEmployee(payload)
+        const hasPassword = payload.role === 'MANAGER' || payload.role === 'SECRETAIRE'
+        setToast({
+          type: 'success',
+          message: hasPassword && response?.tempPassword
+            ? `Employé créé. Mot de passe temporaire : ${response.tempPassword}`
+            : response?.message ?? 'Employé créé avec succès.',
+        })
       }
-
-      setToast({
-        type: 'success',
-        message: mode === 'EDIT' ? 'Employé modifié avec succès.' : 'Employé créé avec succès.',
-      })
 
       setTimeout(() => navigate('/admin/employes'), 700)
       return true
     } catch (error) {
-      setToast({
-        type: 'error',
-        message: error.response?.data?.message ?? 'Une erreur est survenue pendant l’enregistrement.',
-      })
+      const serverMsg = error.response?.data?.message
+        || error.response?.data?.error
+        || error.message
+        || 'Une erreur est survenue pendant l\'enregistrement.'
+      setToast({ type: 'error', message: serverMsg })
       return false
     } finally {
       setSubmitting(false)

@@ -182,6 +182,24 @@ export default function EmployeeFormPage() {
                   onChange={updateField}
                 />
               </div>
+              {!isEditMode && (
+                <div className="mt-5 border-t border-slate-100 pt-5">
+                  <SelectField
+                    label="Rôle utilisateur"
+                    name="role"
+                    value={values.role}
+                    options={[
+                      { value: 'EMPLOYE', label: 'Employé (accès limité)' },
+                      { value: 'MANAGER', label: 'Manager (accès département)' },
+                      { value: 'SECRETAIRE', label: 'Secrétaire (accès RH)' },
+                    ]}
+                    onChange={updateField}
+                  />
+                  <p className="mt-2 text-xs text-slate-400">
+                    Le rôle détermine l'accès à l'interface et l'envoi du mot de passe par email.
+                  </p>
+                </div>
+              )}
             </FormSection>
 
             <div className="sticky bottom-0 z-20 -mx-4 border-t border-slate-200 bg-slate-50/90 px-4 py-4 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
