@@ -22,51 +22,26 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Map<String, String>> handleConflict(IllegalStateException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
     }
 
-    /**
-     * Traite les exceptions IllegalArgumentException (paramètres invalides).
-     * 
-     * @param ex Exception captée
-     * @return Réponse 400 Bad Request avec message
-     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleBadArgument(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
     }
 
-    /**
-     * Traite les exceptions NoSuchElementException (ressource non trouvée).
-     * 
-     * @param ex Exception captée
-     * @return Réponse 404 Not Found
-     */
     @ExceptionHandler(java.util.NoSuchElementException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(java.util.NoSuchElementException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Ressource introuvable"));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "Ressource introuvable"));
     }
 
-    /**
-     * Traite les exceptions AccessDeniedException (accès refusé).
-     * 
-     * @param ex Exception captée
-     * @return Réponse 403 Forbidden
-     */
     @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
     public ResponseEntity<Map<String, String>> handleForbidden(Exception ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Accès refusé"));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Accès refusé"));
     }
 
-    /**
-     * Traite toutes les autres exceptions RuntimeException.
-     * Capte les erreurs non prévues.
-     * 
-     * @param ex Exception captée
-     * @return Réponse 400 Bad Request
-     */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, String>> handleRuntime(RuntimeException ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
     }
 }

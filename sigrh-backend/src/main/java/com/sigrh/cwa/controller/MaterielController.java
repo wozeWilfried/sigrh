@@ -48,8 +48,9 @@ public class MaterielController {
             @RequestParam(required = false) Long categorieId,
             @RequestParam(required = false) String statut,
             @RequestParam(required = false) Long employeId,
+            @RequestParam(required = false) Long departementId,
             @RequestParam(required = false) String q) {
-        return ResponseEntity.ok(materielService.findAllMateriel(categorieId, statut, employeId, q));
+        return ResponseEntity.ok(materielService.findAllMateriel(categorieId, statut, employeId, departementId, q));
     }
 
     @PostMapping
@@ -91,5 +92,19 @@ public class MaterielController {
     @PutMapping("/attributions/{id}/retour")
     public ResponseEntity<Map<String, Object>> retournerMateriel(@PathVariable Long id) {
         return ResponseEntity.ok(materielService.retournerMateriel(id));
+    }
+
+    @PostMapping("/{id}/attribuer")
+    public ResponseEntity<Map<String, Object>> attribuerMateriel(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> data) {
+        Long employeId = ((Number) data.get("employeId")).longValue();
+        String motif = (String) data.get("motif");
+        return ResponseEntity.status(HttpStatus.CREATED).body(materielService.assignerMaterielById(id, employeId, motif));
+    }
+
+    @PutMapping("/{id}/retourner")
+    public ResponseEntity<Map<String, Object>> retournerMaterielByMaterielId(@PathVariable Long id) {
+        return ResponseEntity.ok(materielService.retournerMaterielByMaterielId(id));
     }
 }

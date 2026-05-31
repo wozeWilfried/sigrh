@@ -59,14 +59,15 @@ public class MaterielService {
 
     // ─── ÉQUIPEMENTS ─────────────────────────────────
 
-    public List<Map<String, Object>> findAllMateriel(Long categorieId, String statut, Long employeId, String q) {
+    public List<Map<String, Object>> findAllMateriel(Long categorieId, String statut, Long employeId, Long departementId, String q) {
         return materielRepo.findAll().stream()
             .filter(m -> categorieId == null || (m.getCategorie() != null && m.getCategorie().getId().equals(categorieId)))
             .filter(m -> statut == null || m.getStatut().name().equalsIgnoreCase(statut))
             .filter(m -> employeId == null || (m.getEmploye() != null && m.getEmploye().getId().equals(employeId)))
+            .filter(m -> departementId == null || (m.getDepartement() != null && m.getDepartement().getId().equals(departementId)))
             .filter(m -> q == null || m.getNom().toLowerCase().contains(q.toLowerCase())
                 || m.getCode().toLowerCase().contains(q.toLowerCase())
-                || m.getNumeroSerie().toLowerCase().contains(q.toLowerCase()))
+                || m.getNumeroSerie() != null && m.getNumeroSerie().toLowerCase().contains(q.toLowerCase()))
             .map(this::materielToMap)
             .collect(Collectors.toList());
     }
@@ -78,7 +79,7 @@ public class MaterielService {
         m.setNom((String) data.get("nom"));
         m.setDescription((String) data.get("description"));
         m.setNumeroSerie((String) data.get("numeroSerie"));
-        m.setStatut(StatutMateriel.DISPONIBLE);
+        m.setStatut(data.containsKey("statut") ? StatutMateriel.valueOf((String) data.get("statut")) : StatutMateriel.DISPONIBLE);
         m.setQuantite(data.get("quantite") != null ? ((Number) data.get("quantite")).intValue() : 1);
         if (data.containsKey("dateAcquisition")) {
             m.setDateAcquisition(LocalDate.parse((String) data.get("dateAcquisition")));
@@ -117,7 +118,12 @@ public class MaterielService {
 
     @Transactional
     public void deleteMateriel(Long id) {
-        materielRepo.deleteById(id);
+        Materiel m = materielRepo.findById(id)
+            .orElseThrow(() -> new RuntimeException("Matériel non trouvé"));
+        if (m.getStatut() == StatutMateriel.ASSIGNE) {
+            throw new IllegalStateException("Impossible de supprimer un matériel actuellement attribué à un employé.");
+        }
+        materielRepo.delete(m);
     }
 
     public Map<String, Object> getStats() {
@@ -142,11 +148,10 @@ public class MaterielService {
             .map(this::attributionToMap)
             .collect(Collectors.toList());
     }
-
     @Transactional
-    public Map<String, Object> assignerMateriel(Map<String, Object> data) {
-        Materiel m = materielRepo.findById(((Number) data.get("materielId")).longValue()).orElseThrow();
-        Employe e = employeRepo.findById(((Number) data.get("employeId")).longValue()).orElseThrow();
+    public Map<String, Object> assignerMaterielById(Long materielId, Long employeId, String motif) {
+        Materiel m = materielRepo.findById(materielId).orElseThrow();
+        Employe e = employeRepo.findById(employeId).orElseThrow();
 
         if (m.getStatut() == StatutMateriel.ASSIGNE) {
             throw new IllegalStateException("Ce matériel est déjà assigné");
@@ -163,9 +168,35 @@ public class MaterielService {
         a.setMateriel(m);
         a.setEmploye(e);
         a.setDateAttribution(LocalDate.now());
-        a.setMotif((String) data.get("motif"));
+        a.setMotif(motif);
         a.setRetourne(false);
         return attributionToMap(attributionRepo.save(a));
+    }
+
+    @Transactional
+    public Map<String, Object> retournerMaterielByMaterielId(Long materielId) {
+        AttributionMateriel a = attributionRepo.findByMaterielIdAndRetourne(materielId, false)
+            .orElseThrow(() -> new IllegalStateException("Aucune attribution active pour ce matériel"));
+        a.setDateRetour(LocalDate.now());
+        a.setRetourne(true);
+        attributionRepo.save(a);
+
+        Materiel m = a.getMateriel();
+        m.setStatut(StatutMateriel.DISPONIBLE);
+        m.setEmploye(null);
+        materielRepo.save(m);
+
+        return attributionToMap(a);
+    }
+
+    @Transactional
+    public Map<String, Object> assignerMateriel(Map<String, Object> data) {
+        Map<String, Object> result = assignerMaterielById(
+            ((Number) data.get("materielId")).longValue(),
+            ((Number) data.get("employeId")).longValue(),
+            (String) data.get("motif")
+        );
+        return result;
     }
 
     @Transactional

@@ -39,6 +39,13 @@ public class DashboardController {
         return ResponseEntity.ok(dashboardService.getDashboardKpis());
     }
 
+    @GetMapping("/evolution")
+    public ResponseEntity<List<Map<String, Object>>> getEvolution(
+            @RequestParam(defaultValue = "2025") int annee,
+            @RequestParam(required = false) String departement) {
+        return ResponseEntity.ok(dashboardService.getEvolution(annee, departement));
+    }
+
     @GetMapping("/attendance-stats")
     public ResponseEntity<List<Map<String, Object>>> getAttendanceStats() {
         return ResponseEntity.ok(dashboardService.getAttendanceStats());

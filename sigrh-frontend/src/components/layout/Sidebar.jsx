@@ -14,10 +14,14 @@ import {
   Network,
   Settings,
   ShieldCheck,
+  Toolbox,
   UserCog,
   UserPlus,
   Users,
+  AlertTriangle,
+  Eye,
 } from 'lucide-react'
+import useAuth from '../../hooks/useAuth'
 import { getPendingCount } from '../../api/leaves'
 
 const adminNavigation = [
@@ -50,17 +54,9 @@ const adminNavigation = [
         label: 'Présences',
         icon: ClipboardCheck,
         children: [
-          { label: 'Vue générale', path: '/admin/presences' },
+          { label: 'Consultation', path: '/admin/presences' },
           { label: 'Saisie des présences', path: '/presences/saisie' },
           { label: 'Historique & Statistiques', path: '/presences/historique' },
-        ],
-      },
-      {
-        label: 'Paie',
-        icon: FileText,
-        children: [
-          { label: 'Fiches de paie', path: '/admin/paie' },
-          { label: 'Générer la paie', path: '/admin/paie/generer' },
         ],
       },
     ],
@@ -78,6 +74,20 @@ const adminNavigation = [
     ],
   },
   {
+    section: 'Matériel',
+    items: [
+      {
+        label: 'Matériel',
+        icon: Toolbox,
+        children: [
+          { label: 'Tableau de bord', path: '/admin/materiel' },
+          { label: 'Liste du matériel', path: '/admin/materiel/liste' },
+          { label: 'Catégories', path: '/admin/materiel/categories' },
+        ],
+      },
+    ],
+  },
+  {
     section: 'Rapports',
     items: [
       {
@@ -85,6 +95,63 @@ const adminNavigation = [
         icon: BarChart3,
         children: [
           { label: 'Export RH global', path: '/admin/rapports' },
+        ],
+      },
+    ],
+  },
+  {
+    section: 'Administration',
+    items: [
+      { label: 'Paramètres', path: '/admin/parametres', icon: Settings },
+    ],
+  },
+]
+
+const managerNavigation = [
+  {
+    section: 'Pilotage',
+    items: [
+      { label: 'Tableau de bord', path: '/manager', icon: LayoutDashboard },
+    ],
+  },
+  {
+    section: 'Gestion RH',
+    items: [
+      {
+        label: 'Employés',
+        icon: Users,
+        children: [
+          { label: 'Liste des employés', path: '/manager/employes' },
+        ],
+      },
+      {
+        label: 'Congés',
+        icon: CalendarCheck,
+        badgeKey: 'pendingLeaves',
+        children: [
+          { label: 'Gestion des congés', path: '/conges' },
+        ],
+      },
+      {
+        label: 'Présences',
+        icon: ClipboardCheck,
+        children: [
+          { label: 'Consultation', path: '/manager/presences' },
+          { label: 'Historique & Statistiques', path: '/presences/historique' },
+        ],
+      },
+    ],
+  },
+  {
+    section: 'Matériel',
+    items: [
+      {
+        label: 'Matériel',
+        icon: Toolbox,
+        children: [
+          { label: 'Tableau de bord', path: '/manager/materiel' },
+          { label: 'Liste du matériel', path: '/manager/materiel/liste' },
+          { label: 'Ajouter du matériel', path: '/manager/materiel/ajouter' },
         ],
       },
     ],
@@ -101,17 +168,26 @@ const adminNavigation = [
       },
     ],
   },
+]
+
+const secretaryNavigation = [
   {
-    section: 'Administration',
+    section: 'Présences',
     items: [
-      { label: 'Utilisateurs', path: '/admin/utilisateurs', icon: UserPlus },
-      { label: 'Paramètres', path: '/admin/parametres', icon: Settings },
+      {
+        label: 'Présences',
+        icon: ClipboardCheck,
+        children: [
+          { label: 'Saisie des présences', path: '/presences/saisie' },
+          { label: 'Historique & Statistiques', path: '/presences/historique' },
+        ],
+      },
     ],
   },
 ]
 
-function getInitialOpenMenus(pathname) {
-  return adminNavigation.reduce((openGroups, section) => {
+function getInitialOpenMenus(navigation, pathname) {
+  return navigation.reduce((openGroups, section) => {
     section.items.forEach((item) => {
       if (item.children?.some((child) => pathname.startsWith(child.path))) {
         openGroups[item.label] = true
@@ -122,8 +198,11 @@ function getInitialOpenMenus(pathname) {
 }
 
 export default function Sidebar({ collapsed, onToggle }) {
+  const { user, roleDisplayName } = useAuth()
   const location = useLocation()
-  const [openMenus, setOpenMenus] = useState(() => getInitialOpenMenus(location.pathname))
+  const role = user?.role
+  const navigation = role === 'MANAGER' ? managerNavigation : role === 'SECRETAIRE' ? secretaryNavigation : adminNavigation
+  const [openMenus, setOpenMenus] = useState(() => getInitialOpenMenus(navigation, location.pathname))
   const [pendingLeaves, setPendingLeaves] = useState(0)
 
   useEffect(() => {
@@ -133,6 +212,10 @@ export default function Sidebar({ collapsed, onToggle }) {
       .catch(() => { if (!ignore) setPendingLeaves(0) })
     return () => { ignore = true }
   }, [])
+
+  useEffect(() => {
+    setOpenMenus(getInitialOpenMenus(navigation, location.pathname))
+  }, [navigation, location.pathname])
 
   function toggleMenu(label) {
     setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }))
@@ -144,10 +227,10 @@ export default function Sidebar({ collapsed, onToggle }) {
         collapsed ? 'w-[88px]' : 'w-[280px]'
       }`}
     >
-      <SidebarHeader collapsed={collapsed} />
+      <SidebarHeader collapsed={collapsed} role={role} />
       <nav className="flex-1 overflow-y-auto px-3 py-5">
         <div className="space-y-6">
-          {adminNavigation.map((section) => (
+          {navigation.map((section) => (
             <div key={section.section}>
               {!collapsed && (
                 <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400">
@@ -180,12 +263,14 @@ export default function Sidebar({ collapsed, onToggle }) {
           ))}
         </div>
       </nav>
-      <SidebarFooter collapsed={collapsed} onToggle={onToggle} />
+      <SidebarFooter collapsed={collapsed} onToggle={onToggle} role={role} />
     </aside>
   )
 }
 
-function SidebarHeader({ collapsed }) {
+function SidebarHeader({ collapsed, role }) {
+  const isManager = role === 'MANAGER'
+  const isSecretaire = role === 'SECRETAIRE'
   return (
     <div className="border-b border-slate-100 px-4 py-5">
       <div className="flex items-center gap-3">
@@ -195,18 +280,12 @@ function SidebarHeader({ collapsed }) {
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-base font-bold text-slate-950">SIGRH</p>
-            <p className="truncate text-[11px] font-medium text-slate-500">Espace Admin RH</p>
+            <p className="truncate text-[11px] font-medium text-slate-500">
+              {isManager ? 'Espace Manager' : isSecretaire ? 'Espace Secrétaire' : 'Espace Admin RH'}
+            </p>
           </div>
         )}
       </div>
-      {!collapsed && (
-        <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/70 px-3.5 py-2.5">
-          <div className="flex items-center gap-2 text-xs font-semibold text-blue-700">
-            <Bell size={14} />
-            3 demandes à traiter
-          </div>
-        </div>
-      )}
     </div>
   )
 }
@@ -301,7 +380,9 @@ function SidebarGroup({ item, collapsed, currentPath, isOpen, onToggle, badgeVal
   )
 }
 
-function SidebarFooter({ collapsed, onToggle }) {
+function SidebarFooter({ collapsed, onToggle, role }) {
+  const isManager = role === 'MANAGER'
+  const isSecretaire = role === 'SECRETAIRE'
   return (
     <div className="border-t border-slate-100 p-3">
       {!collapsed && (
@@ -310,8 +391,12 @@ function SidebarFooter({ collapsed, onToggle }) {
             <UserCog size={18} strokeWidth={1.8} />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-950">Administrateur RH</p>
-            <p className="truncate text-[11px] text-slate-500">Accès complet</p>
+            <p className="truncate text-sm font-semibold text-slate-950">
+              {isManager ? 'Manager' : isSecretaire ? 'Secrétaire' : 'Administrateur RH'}
+            </p>
+            <p className="truncate text-[11px] text-slate-500">
+              {isManager ? 'Gestion département' : isSecretaire ? 'Saisie présences' : 'Accès complet'}
+            </p>
           </div>
         </div>
       )}

@@ -54,6 +54,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.DELETE, "/api/employes/*").hasRole("ADMIN")
 
                 // ── ADMIN + RH UNIQUEMENT ──
+                .requestMatchers(HttpMethod.GET, "/api/departements/**").hasAnyRole("ADMIN", "RH", "MANAGER")
                 .requestMatchers("/api/departements/**").hasAnyRole("ADMIN", "RH")
                 .requestMatchers("/api/analyse/**").hasAnyRole("ADMIN", "RH")
                 .requestMatchers("/api/ia/**").hasAnyRole("ADMIN", "RH", "MANAGER")
@@ -63,14 +64,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PATCH, "/api/employes/*/status").hasAnyRole("ADMIN", "RH")
                 .requestMatchers(HttpMethod.POST, "/api/paie/generer").hasAnyRole("ADMIN", "RH")
                 .requestMatchers(HttpMethod.PUT, "/api/paie/*/valider").hasAnyRole("ADMIN", "RH")
-                .requestMatchers(HttpMethod.PUT, "/api/conges/*/valider").hasAnyRole("ADMIN", "RH")
+                .requestMatchers(HttpMethod.PUT, "/api/conges/*/valider").hasAnyRole("ADMIN", "RH", "MANAGER")
 
                 // ── ADMIN + RH + SECRETAIRE ──
                 .requestMatchers("/api/contrats/**").hasAnyRole("ADMIN", "RH", "SECRETAIRE")
-                .requestMatchers("/api/materiel/**").hasAnyRole("ADMIN", "RH", "SECRETAIRE")
+                .requestMatchers("/api/materiel/**").hasAnyRole("ADMIN", "RH", "SECRETAIRE", "MANAGER")
                 .requestMatchers("/api/export/**").hasAnyRole("ADMIN", "RH", "SECRETAIRE")
                 .requestMatchers("/api/rapports/**").hasAnyRole("ADMIN", "RH")
-                .requestMatchers("/api/dashboard/**", "/api/search").hasAnyRole("ADMIN", "RH", "SECRETAIRE")
+                .requestMatchers("/api/dashboard/**", "/api/search").hasAnyRole("ADMIN", "RH", "SECRETAIRE", "MANAGER")
 
                 // ── AUTHENTIFIÉ (contrôle d'accès affiné dans les services) ──
                 .requestMatchers("/api/employes/**").authenticated()

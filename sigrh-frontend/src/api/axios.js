@@ -1,8 +1,21 @@
 import axios from 'axios'
 
-// Fonction utilitaire pour émettre des événements globaux pour les Toasts
 const dispatchToast = (type, message) => {
   window.dispatchEvent(new CustomEvent('app:toast', { detail: { type, message } }))
+}
+
+let isRefreshing = false
+let failedQueue = []
+
+function processQueue(error, token = null) {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error)
+    } else {
+      resolve(token)
+    }
+  })
+  failedQueue = []
 }
 
 const api = axios.create({
@@ -10,10 +23,9 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // Timeout de sécurité (30s)
+  timeout: 30000, // Timeout de sécurité (30s) - augmenté pour les opérations longues
 })
 
-// ── Intercepteur de Requête ─────────────────────────────────────────────
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
@@ -25,65 +37,88 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// ── Intercepteur de Réponse ─────────────────────────────────────────────
 api.interceptors.response.use(
-  (response) => {
-    // Les réponses réussies passent normalement
-    return response
-  },
-  (error) => {
+  (response) => response,
+  async (error) => {
     const { response, config } = error
 
-    // Si on a explicitement demandé de rendre l'erreur silencieuse (pour utiliser le fallback mock sans polluer l'UI)
     if (config?.silentFallback) {
       return Promise.reject(error)
     }
 
     if (!response) {
-      // Erreur réseau (serveur injoignable, timeout, etc.)
       dispatchToast('error', 'Erreur de connexion. Veuillez vérifier votre réseau.')
       return Promise.reject(error)
     }
 
-    const { status, data } = response
+    const { status } = response
 
-    switch (status) {
-      case 401:
-        // Non authentifié ou token expiré
+    if (status === 401 && !config?._retry && !config?.url?.includes('/auth/refresh')) {
+      const refreshToken = localStorage.getItem('refreshToken')
+      if (!refreshToken) {
         localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
-        if (!config?.silentFallback) {
-          dispatchToast('error', 'Votre session a expiré. Veuillez vous reconnecter.')
-          setTimeout(() => {
-            window.location.href = '/'
-          }, 1500)
+        dispatchToast('error', 'Votre session a expiré. Veuillez vous reconnecter.')
+        setTimeout(() => { window.location.href = '/' }, 1500)
+        return Promise.reject(error)
+      }
+
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject })
+        }).then((newToken) => {
+          config.headers.Authorization = `Bearer ${newToken}`
+          return api(config)
+        }).catch((err) => Promise.reject(err))
+      }
+
+      config._retry = true
+      isRefreshing = true
+
+      try {
+        const data = await api.post('/auth/refresh', { refreshToken })
+        const newToken = data.data.token
+        const newRefreshToken = data.data.refreshToken
+
+        localStorage.setItem('token', newToken)
+        localStorage.setItem('refreshToken', newRefreshToken)
+
+        const storedUser = localStorage.getItem('user')
+        if (storedUser) {
+          const userData = JSON.parse(storedUser)
+          userData.token = newToken
+          localStorage.setItem('user', JSON.stringify(userData))
         }
-        break
 
-      case 403:
-        // Accès refusé (Forbidden)
-        if (!config?.silentFallback) {
-          dispatchToast('error', 'Accès refusé : vous n\'avez pas les permissions nécessaires.')
-        }
-        break
+        processQueue(null, newToken)
+        config.headers.Authorization = `Bearer ${newToken}`
+        return api(config)
+      } catch (refreshError) {
+        processQueue(refreshError, null)
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('user')
+        dispatchToast('error', 'Votre session a expiré. Veuillez vous reconnecter.')
+        setTimeout(() => { window.location.href = '/' }, 1500)
+        return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
+      }
+    }
 
-      case 404:
-        // Optionnel : ne pas toujours afficher un toast pour 404 si on gère localement
-        // dispatchToast('info', 'Ressource introuvable.')
-        break
+    if (status === 403) {
+      if (!config?.silentFallback) {
+        dispatchToast('error', 'Accès refusé : vous n\'avez pas les permissions nécessaires.')
+      }
+    }
 
-      case 500:
-      case 502:
-      case 503:
-      case 504:
-        // Erreur serveur générique
-        dispatchToast('error', data?.message || 'Une erreur serveur est survenue. Veuillez réessayer plus tard.')
-        break
+    if ([500, 502, 503, 504].includes(status)) {
+      dispatchToast('error', response.data?.message || 'Une erreur serveur est survenue. Veuillez réessayer plus tard.')
+    }
 
-      default:
-        // Autres erreurs (400 Bad Request, etc.)
-        dispatchToast('error', data?.message || 'Une erreur inattendue s\'est produite.')
-        break
+    if (status >= 400 && status < 500 && status !== 401 && status !== 403 && status !== 404) {
+      dispatchToast('error', response.data?.message || 'Une erreur inattendue s\'est produite.')
     }
 
     return Promise.reject(error)

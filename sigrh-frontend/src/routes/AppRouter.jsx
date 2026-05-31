@@ -19,9 +19,15 @@ import Utilisateurs from '../pages/admin/Utilisateurs'
 import Parametres from '../pages/admin/Parametres'
 import RHDashboard from '../pages/rh/Dashboard'
 import ManagerDashboard from '../pages/manager/Dashboard'
+import ManagerEmployes from '../pages/manager/Employes'
+import ManagerPresences from '../pages/manager/Presences'
 import SecretaryDashboard from '../pages/secretary/Dashboard'
 import TurnoverPredictions from '../pages/admin/TurnoverPredictions'
 import RapportsPage from '../pages/admin/RapportsPage'
+import CategoriesMateriel from '../pages/admin/CategoriesMateriel'
+import MaterielDashboard from '../pages/admin/MaterielDashboard'
+import AjouterMateriel from '../pages/manager/AjouterMateriel'
+import ListeMateriel from '../pages/manager/ListeMateriel'
 import AlertsPage from '../pages/admin/AlertsPage'
 import NotFoundPage from '../pages/NotFoundPage'
 import FirstLoginPasswordPage from '../pages/FirstLoginPasswordPage'
@@ -151,7 +157,7 @@ export default function AppRouter() {
       <Route
         path="/presences/saisie"
         element={
-          <ProtectedRoute roles={['ADMIN', 'RH', 'EMPLOYE']}>
+          <ProtectedRoute roles={['ADMIN', 'RH', 'SECRETAIRE', 'EMPLOYE']}>
             <AttendanceEntryPage />
           </ProtectedRoute>
         }
@@ -159,7 +165,7 @@ export default function AppRouter() {
       <Route
         path="/presences/historique"
         element={
-          <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
+          <ProtectedRoute roles={['ADMIN', 'MANAGER', 'SECRETAIRE']}>
             <AttendanceHistoryPage />
           </ProtectedRoute>
         }
@@ -205,6 +211,30 @@ export default function AppRouter() {
         }
       />
       <Route
+        path="/admin/materiel"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'RH', 'SECRETAIRE']}>
+            <MaterielDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/materiel/categories"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'RH', 'SECRETAIRE']}>
+            <CategoriesMateriel />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/materiel/liste"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'RH', 'SECRETAIRE']}>
+            <ListeMateriel />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/ia/predictions"
         element={
           <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
@@ -233,6 +263,54 @@ export default function AppRouter() {
         element={
           <ProtectedRoute roles={['MANAGER']}>
             <ManagerDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/employes"
+        element={
+          <ProtectedRoute roles={['MANAGER']}>
+            <ManagerEmployes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/presences"
+        element={
+          <ProtectedRoute roles={['MANAGER']}>
+            <ManagerPresences />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/materiel"
+        element={
+          <ProtectedRoute roles={['MANAGER', 'ADMIN', 'RH', 'SECRETAIRE']}>
+            <MaterielDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/materiel/liste"
+        element={
+          <ProtectedRoute roles={['MANAGER']}>
+            <ListeMateriel />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/materiel/ajouter"
+        element={
+          <ProtectedRoute roles={['MANAGER']}>
+            <AjouterMateriel />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/secretaire"
+        element={
+          <ProtectedRoute roles={['SECRETAIRE']}>
+            <AttendanceEntryPage />
           </ProtectedRoute>
         }
       />

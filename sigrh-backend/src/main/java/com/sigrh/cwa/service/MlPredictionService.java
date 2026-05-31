@@ -183,6 +183,8 @@ public class MlPredictionService {
         result.put("employeId", emp.getId());
         result.put("nom", emp.getNom());
         result.put("prenom", emp.getPrenom());
+        result.put("poste", emp.getPoste());
+        result.put("departement", emp.getDepartement() != null ? emp.getDepartement().getNom() : "");
         result.put("scoreRisque", Math.round(score * 10000.0) / 10000.0);
         result.put("niveau", niveau);
         result.put("probabilite", Math.round(score * 10000.0) / 10000.0);
