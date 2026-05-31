@@ -6,11 +6,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 /**
  * Contrôleur REST pour l'authentification.
- * Gère les opérations de connexion et génération de tokens JWT.
+ * Gère les opérations de connexion, changement de mot de passe.
  * 
- * Point de terminaison: POST /api/auth/login
+ * Points de terminaison:
+ * - POST /api/auth/login
+ * - POST /api/auth/change-password
  * 
  * @author Équipe SIGRH
  * @version 1.0
@@ -31,5 +35,18 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    /**
+     * Endpoint de changement de mot de passe.
+     * Utilisé notamment pour la première connexion (firstLogin).
+     * 
+     * @param request Contient l'ancien et le nouveau mot de passe
+     * @return Message de confirmation
+     */
+    @PostMapping("/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(@RequestBody ChangePasswordRequest request) {
+        authService.changePassword(request);
+        return ResponseEntity.ok(Map.of("message", "Mot de passe modifié avec succès"));
     }
 }

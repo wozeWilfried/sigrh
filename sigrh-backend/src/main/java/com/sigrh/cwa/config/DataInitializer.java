@@ -92,7 +92,7 @@ public class DataInitializer implements CommandLineRunner {
     private User createUser(String username, String password, String email, Role role) {
         User u = userRepo.save(User.builder()
             .username(username).password(passwordEncoder.encode(password))
-            .email(email).role(role).active(true).build());
+            .email(email).role(role).active(true).firstLogin(false).build());
         return u;
     }
 
