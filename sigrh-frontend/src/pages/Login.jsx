@@ -121,8 +121,14 @@ export default function Login() {
 
   useEffect(() => {
     if (user?.role) {
-      const rolePath = user.role.toLowerCase().replace('_', '')
-      navigate(`/${rolePath}`, { replace: true })
+      if (user.firstLogin && user.employeId) {
+        navigate(`/employees/${user.employeId}`, { replace: true })
+      } else if (user.firstLogin) {
+        navigate('/auth/change-password', { replace: true })
+      } else {
+        const rolePath = user.role.toLowerCase().replace('_', '')
+        navigate(`/${rolePath}`, { replace: true })
+      }
     }
   }, [user, navigate])
 
@@ -164,8 +170,14 @@ export default function Login() {
     setLoading(true)
     try {
       const userData = await login(form)
-      const rolePath = userData.role.toLowerCase().replace('_', '')
-      navigate(`/${rolePath}`, { replace: true })
+      if (userData.firstLogin && userData.employeId) {
+        navigate(`/employees/${userData.employeId}`, { replace: true })
+      } else if (userData.firstLogin) {
+        navigate('/auth/change-password', { replace: true })
+      } else {
+        const rolePath = userData.role.toLowerCase().replace('_', '')
+        navigate(`/${rolePath}`, { replace: true })
+      }
     } catch (err) {
       setServerError(
         err.response?.status === 401

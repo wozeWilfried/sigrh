@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
-import { loginUser } from '../api/auth'
+import { loginUser, changePassword as changePasswordApi } from '../api/auth'
 
 export const AuthContext = createContext(null)
 
@@ -36,6 +36,7 @@ export function AuthProvider({ children }) {
       role: data.role,
       username: data.username,
       employeId: data.employeId,
+      firstLogin: data.firstLogin ?? false,
     }
     localStorage.setItem('token', data.token)
     localStorage.setItem('user', JSON.stringify(userData))
@@ -43,6 +44,15 @@ export function AuthProvider({ children }) {
     setUser(userData)
     return userData
   }, [])
+
+  const changePassword = useCallback(async ({ currentPassword, newPassword }) => {
+    await changePasswordApi({ currentPassword, newPassword })
+    if (user) {
+      const updated = { ...user, firstLogin: false }
+      localStorage.setItem('user', JSON.stringify(updated))
+      setUser(updated)
+    }
+  }, [user])
 
   const logout = useCallback(() => {
     localStorage.removeItem('token')
@@ -58,12 +68,13 @@ export function AuthProvider({ children }) {
       RH: 'Responsable RH',
       MANAGER: 'Manager',
       EMPLOYE: 'Employé',
+      SECRETAIRE: 'Secrétaire',
     }
     return names[user.role] || user.role
   }, [user])
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, roleDisplayName }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, changePassword, roleDisplayName }}>
       {children}
     </AuthContext.Provider>
   )
