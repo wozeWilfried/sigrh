@@ -108,17 +108,40 @@ public class CongeService {
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
         if (employe.getStatut() == StatutEmploye.DEPART)
             throw new IllegalArgumentException("Impossible de créer un congé pour un employé avec le statut DÉPART");
+
+        LocalDate today = LocalDate.now();
+        if (dto.getDateDebut() == null || dto.getDateFin() == null)
+            throw new IllegalArgumentException("Les dates de début et de fin sont obligatoires.");
+        if (dto.getDateDebut().isBefore(today))
+            throw new IllegalArgumentException("La date de début ne peut pas être dans le passé.");
+        if (dto.getDateFin().isBefore(dto.getDateDebut()))
+            throw new IllegalArgumentException("La date de fin doit être postérieure ou égale à la date de début.");
+
         long jours = ChronoUnit.DAYS.between(dto.getDateDebut(), dto.getDateFin()) + 1;
+
+        TypeConge typeConge = TypeConge.valueOf(dto.getType());
+        if (typeConge == TypeConge.ANNUEL) {
+            Map<String, Object> solde = getSolde(dto.getEmployeId());
+            int soldeDisponible = (int) solde.get("soldeDisponible");
+            if (jours > soldeDisponible)
+                throw new IllegalArgumentException(
+                    "Solde de congés insuffisant. Vous avez " + soldeDisponible + " jour(s) disponible(s).");
+        }
+
+        List<StatutConge> actifs = List.of(StatutConge.EN_ATTENTE, StatutConge.APPROUVE);
+        List<Conge> overlaps = congeRepo.findOverlapping(dto.getEmployeId(), dto.getDateDebut(), dto.getDateFin(), actifs);
+        if (!overlaps.isEmpty())
+            throw new IllegalStateException("Cette période chevauche un congé existant.");
 
         Conge conge = Conge.builder()
             .employe(employe)
-            .type(TypeConge.valueOf(dto.getType()))
+            .type(typeConge)
             .dateDebut(dto.getDateDebut())
             .dateFin(dto.getDateFin())
             .nombreJours((int) jours)
             .motif(dto.getMotif())
             .statut(StatutConge.EN_ATTENTE)
-            .dateCreation(LocalDate.now())
+            .dateCreation(today)
             .build();
         return toDTO(congeRepo.save(conge));
     }

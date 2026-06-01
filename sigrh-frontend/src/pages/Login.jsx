@@ -180,9 +180,11 @@ export default function Login() {
       }
     } catch (err) {
       setServerError(
-        err.response?.status === 401
-          ? 'Identifiants incorrects'
-          : 'Service momentanément indisponible'
+        !err.response
+          ? 'Service momentanément indisponible'
+          : err.response.status === 401
+            ? 'Identifiants incorrects'
+            : 'Erreur de connexion. Veuillez réessayer.'
       )
     } finally {
       setLoading(false)
