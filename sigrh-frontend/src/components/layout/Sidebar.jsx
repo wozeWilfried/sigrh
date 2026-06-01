@@ -5,6 +5,7 @@ import {
   Bell,
   BrainCircuit,
   CalendarCheck,
+  CalendarPlus,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -197,11 +198,29 @@ function getInitialOpenMenus(navigation, pathname) {
   }, {})
 }
 
+const employeeNavigation = [
+  {
+    section: 'Congés',
+    items: [
+      {
+        label: 'Tableau de bord',
+        icon: LayoutDashboard,
+        path: '/employe',
+      },
+      {
+        label: 'Demander un congé',
+        icon: CalendarPlus,
+        path: '/employe/conges/demander',
+      },
+    ],
+  },
+]
+
 export default function Sidebar({ collapsed, onToggle }) {
   const { user, roleDisplayName } = useAuth()
   const location = useLocation()
   const role = user?.role
-  const navigation = role === 'MANAGER' ? managerNavigation : role === 'SECRETAIRE' ? secretaryNavigation : adminNavigation
+  const navigation = role === 'MANAGER' ? managerNavigation : role === 'SECRETAIRE' ? secretaryNavigation : role === 'EMPLOYE' ? employeeNavigation : adminNavigation
   const [openMenus, setOpenMenus] = useState(() => getInitialOpenMenus(navigation, location.pathname))
   const [pendingLeaves, setPendingLeaves] = useState(0)
 
@@ -294,7 +313,7 @@ function SidebarLink({ item, collapsed, badgeValue }) {
   return (
     <NavLink
       to={item.path}
-      end={item.path === '/admin'}
+      end={item.path === '/admin' || item.path === '/manager' || item.path === '/rh' || item.path === '/secretaire' || item.path === '/employe'}
       title={collapsed ? item.label : undefined}
       className={({ isActive }) =>
         `group relative flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-all duration-200 ${

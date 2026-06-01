@@ -71,6 +71,7 @@ function normalizeLeave(leave) {
     type: leave.type ?? '-',
     dateDebut: leave.dateDebut ?? leave.startDate,
     dateFin: leave.dateFin ?? leave.endDate,
+    nombreJours: leave.nombreJours ?? 0,
     statut: normalizeStatus(leave.statut ?? leave.status),
     commentaireRH: leave.commentaireRH ?? leave.comment ?? '',
   }

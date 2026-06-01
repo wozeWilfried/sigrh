@@ -13,6 +13,8 @@ import Conges from '../pages/admin/Conges'
 import Presences from '../pages/admin/Presences'
 import AttendanceEntryPage from '../pages/admin/AttendanceEntryPage'
 import AttendanceHistoryPage from '../pages/admin/AttendanceHistoryPage'
+import LeaveRequestPage from '../pages/employee/LeaveRequestPage'
+import EmployeeDashboard from '../pages/employee/EmployeeDashboard'
 import Paie from '../pages/admin/Paie'
 import PaieGenerer from '../pages/admin/PaieGenerer'
 import Utilisateurs from '../pages/admin/Utilisateurs'
@@ -318,7 +320,15 @@ export default function AppRouter() {
         path="/employe"
         element={
           <ProtectedRoute roles={['EMPLOYE']}>
-            <SecretaryDashboard />
+            <EmployeeDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/employe/conges/demander"
+        element={
+          <ProtectedRoute roles={['EMPLOYE']}>
+            <LeaveRequestPage />
           </ProtectedRoute>
         }
       />
