@@ -12,7 +12,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
-import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,6 +35,7 @@ public class CongeService {
 
     private final CongeRepository congeRepo;
     private final EmployeRepository employeRepo;
+    private final SoldeCongeService soldeCongeService;
     private final SecurityHelper security;
 
     /**
@@ -91,7 +91,10 @@ public class CongeService {
                     && c.getEmploye().getDepartement().getId().equals(deptId))
                 .map(this::toDTO).collect(Collectors.toList());
         }
-        throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+        // Employé : accès limité à ses propres congés
+        return all.stream()
+            .filter(c -> c.getEmploye() != null && c.getEmploye().getId().equals(security.getCurrentEmployeId()))
+            .map(this::toDTO).collect(Collectors.toList());
     }
 
     /**
@@ -121,8 +124,7 @@ public class CongeService {
 
         TypeConge typeConge = TypeConge.valueOf(dto.getType());
         if (typeConge == TypeConge.ANNUEL) {
-            Map<String, Object> solde = getSolde(dto.getEmployeId());
-            int soldeDisponible = (int) solde.get("soldeDisponible");
+            int soldeDisponible = soldeCongeService.getSoldeDisponible(dto.getEmployeId(), today.getYear(), typeConge);
             if (jours > soldeDisponible)
                 throw new IllegalArgumentException(
                     "Solde de congés insuffisant. Vous avez " + soldeDisponible + " jour(s) disponible(s).");
@@ -165,7 +167,18 @@ public class CongeService {
             if (deptId == null || !deptId.equals(security.getCurrentDepartementId()))
                 throw new AccessDeniedException("Accès refusé : cet employé n'est pas dans votre département");
         }
-        conge.setStatut(StatutConge.valueOf(statut));
+
+        StatutConge nouveauStatut = StatutConge.valueOf(statut);
+        StatutConge ancienStatut = conge.getStatut();
+        int jours = conge.getNombreJours() != null ? conge.getNombreJours() : 0;
+
+        if (ancienStatut == StatutConge.EN_ATTENTE && nouveauStatut == StatutConge.APPROUVE) {
+            soldeCongeService.consommer(conge.getEmploye().getId(), conge.getType(), jours);
+        } else if (ancienStatut == StatutConge.APPROUVE && nouveauStatut == StatutConge.REFUSE) {
+            soldeCongeService.restaurer(conge.getEmploye().getId(), conge.getType(), jours);
+        }
+
+        conge.setStatut(nouveauStatut);
         conge.setCommentaireRH(commentaire);
         return toDTO(congeRepo.save(conge));
     }
@@ -182,6 +195,11 @@ public class CongeService {
         if (!security.isAdminOrRh()
             && !security.isSelf(conge.getEmploye() != null ? conge.getEmploye().getId() : null))
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
+
+        if (conge.getStatut() == StatutConge.APPROUVE) {
+            int jours = conge.getNombreJours() != null ? conge.getNombreJours() : 0;
+            soldeCongeService.restaurer(conge.getEmploye().getId(), conge.getType(), jours);
+        }
         congeRepo.deleteById(id);
     }
 
@@ -198,32 +216,23 @@ public class CongeService {
      * @return Map contenant soldeDisponible, joursAcquis, joursConsommes, joursEnAttente
      */
     public Map<String, Object> getSolde(Long employeId) {
-        Employe employe = employeRepo.findById(employeId).orElseThrow();
+        employeRepo.findById(employeId).orElseThrow();
         if (!security.canAccessEmploye(employeId))
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé");
 
-        int tauxAnnuel = 30;
-
-        int ancienneteAnnees = Period.between(employe.getDateEmbauche(), LocalDate.now()).getYears();
-        int joursAcquis = Math.max(0, ancienneteAnnees * tauxAnnuel);
-
-        int joursConsommes = congeRepo.findByEmployeIdAndTypeAndStatut(employeId, TypeConge.ANNUEL, StatutConge.APPROUVE)
-            .stream()
-            .mapToInt(c -> c.getNombreJours() != null ? c.getNombreJours() : 0)
-            .sum();
+        int annee = LocalDate.now().getYear();
+        SoldeConge solde = soldeCongeService.initialiserOuObtenir(employeId, annee, TypeConge.ANNUEL);
 
         int joursEnAttente = congeRepo.findByEmployeIdAndTypeAndStatut(employeId, TypeConge.ANNUEL, StatutConge.EN_ATTENTE)
             .stream()
             .mapToInt(c -> c.getNombreJours() != null ? c.getNombreJours() : 0)
             .sum();
 
-        int soldeDisponible = Math.max(0, joursAcquis - joursConsommes);
-
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("employeId", employeId);
-        result.put("soldeDisponible", soldeDisponible);
-        result.put("joursAcquis", joursAcquis);
-        result.put("joursConsommes", joursConsommes);
+        result.put("soldeDisponible", solde.getJoursRestants());
+        result.put("joursAcquis", solde.getJoursAcquis() + solde.getJoursReportes());
+        result.put("joursConsommes", solde.getJoursConsommes());
         result.put("joursEnAttente", joursEnAttente);
         return result;
     }

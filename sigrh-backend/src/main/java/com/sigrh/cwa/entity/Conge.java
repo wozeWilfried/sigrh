@@ -31,7 +31,8 @@ public class Conge {
 
     /** Type de congé */
     @Enumerated(EnumType.STRING)
-    private TypeConge type; // ANNUEL, MALADIE, MATERNITE, SANS_SOLDE
+    @Column(length = 20)
+    private TypeConge type;
 
     /** Date de début */
     private LocalDate dateDebut;
