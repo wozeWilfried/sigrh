@@ -188,15 +188,13 @@ public class EmployeService {
                 role = Role.EMPLOYE;
             }
         }
-        boolean needsCredentials = role == Role.MANAGER || role == Role.SECRETAIRE;
-
         User user = User.builder()
             .username(username)
             .password(passwordEncoder.encode(rawPassword))
             .email(email)
             .role(role)
             .active(true)
-            .firstLogin(needsCredentials)
+            .firstLogin(true)
             .build();
         user = userRepo.save(user);
 
@@ -211,15 +209,9 @@ public class EmployeService {
         user.setEmploye(e);
         userRepo.save(user);
 
-        if (needsCredentials) {
-            emailService.sendCredentials(email, username, rawPassword);
-        } else {
-            emailService.sendWelcomeMessage(email, username);
-        }
+        emailService.sendCredentials(email, username, rawPassword);
 
-        String message = needsCredentials
-            ? "Employé créé avec succès. Identifiants envoyés à " + email
-            : "Employé créé avec succès. Un email de bienvenue a été envoyé à " + email;
+        String message = "Employé créé avec succès. Identifiants envoyés à " + email;
 
         return CreateEmployeResponse.builder()
             .employe(toDTO(e))

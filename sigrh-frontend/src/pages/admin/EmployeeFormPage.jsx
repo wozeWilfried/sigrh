@@ -189,14 +189,14 @@ export default function EmployeeFormPage() {
                     name="role"
                     value={values.role}
                     options={[
-                      { value: 'EMPLOYE', label: 'Employé (accès limité)' },
-                      { value: 'MANAGER', label: 'Manager (accès département)' },
-                      { value: 'SECRETAIRE', label: 'Secrétaire (accès RH)' },
+                      { value: 'EMPLOYE', label: 'Employé' },
+                      { value: 'MANAGER', label: 'Manager' },
+                      { value: 'SECRETAIRE', label: 'Secrétaire' },
                     ]}
                     onChange={updateField}
                   />
                   <p className="mt-2 text-xs text-slate-400">
-                    Le rôle détermine l'accès à l'interface et l'envoi du mot de passe par email.
+                    Le rôle détermine l'accès à l'interface de l'application.
                   </p>
                 </div>
               )}
