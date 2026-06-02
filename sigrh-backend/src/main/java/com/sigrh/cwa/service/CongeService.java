@@ -223,9 +223,8 @@ public class CongeService {
         int annee = LocalDate.now().getYear();
         SoldeConge solde = soldeCongeService.initialiserOuObtenir(employeId, annee, TypeConge.ANNUEL);
 
-        int joursEnAttente = congeRepo.findByEmployeId(employeId)
+        int joursEnAttente = congeRepo.findByEmployeIdAndTypeAndStatut(employeId, TypeConge.ANNUEL, StatutConge.EN_ATTENTE)
             .stream()
-            .filter(c -> c.getStatut() == StatutConge.EN_ATTENTE)
             .mapToInt(c -> c.getNombreJours() != null ? c.getNombreJours() : 0)
             .sum();
 
