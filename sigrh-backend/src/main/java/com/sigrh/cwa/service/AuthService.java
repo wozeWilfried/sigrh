@@ -121,11 +121,14 @@ public class AuthService {
         String username = org.springframework.security.core.context.SecurityContextHolder
             .getContext().getAuthentication().getName();
 
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(username, request.getCurrentPassword())
-        );
-
         User user = userRepository.findByUsername(username).orElseThrow();
+
+        if (!user.isFirstLogin()) {
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(username, request.getCurrentPassword())
+            );
+        }
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setFirstLogin(false);
         userRepository.save(user);
