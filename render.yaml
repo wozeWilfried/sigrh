@@ -12,6 +12,6 @@ services:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: CORS_ORIGINS
-        value: https://sigrh-frontend-1hhsjca8l-johntarick51-9571.vercel.app,http://localhost:5173
+        value: https://sigrh-frontend.vercel.app,https://sigrh-frontend-1hhsjca8l-johntarick51-9571.vercel.app,http://localhost:5173
       - key: JAVA_VERSION
         value: "21"
