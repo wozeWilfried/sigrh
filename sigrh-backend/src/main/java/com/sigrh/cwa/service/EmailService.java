@@ -18,6 +18,9 @@ public class EmailService {
     @Value("${app.mail.from}")
     private String fromAddress;
 
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
+
     private static final String STYLE = """
         <style>
             body { margin:0; padding:0; background-color:#f4f7fc; font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif; }
@@ -101,13 +104,13 @@ public class EmailService {
                 <dt>Mot de passe temporaire</dt>
                 <dd class="code">%s</dd>
                 <dt>URL d'accès</dt>
-                <dd>http://localhost:5173</dd>
+                <dd>%s</dd>
             </dl>
 
             <p style="text-align:center;">
-                <a href="http://localhost:5173" class="btn">Accéder à mon espace</a>
+                <a href="%s" class="btn">Accéder à mon espace</a>
             </p>
-            """.formatted(username, tempPassword);
+            """.formatted(username, tempPassword, frontendUrl, frontendUrl);
 
         sendEmail(to, "Bienvenue sur SIGRH — Vos identifiants de connexion",
             wrap("Création de votre compte", body));
@@ -147,9 +150,9 @@ public class EmailService {
             <p>Si vous n'êtes pas à l'origine de cette modification, contactez le support à <a href="mailto:%s">%s</a>.</p>
 
             <p style="text-align:center;">
-                <a href="http://localhost:5173" class="btn">Accéder à SIGRH</a>
+                <a href="%s" class="btn">Accéder à SIGRH</a>
             </p>
-            """.formatted(fromAddress, fromAddress);
+            """.formatted(fromAddress, fromAddress, frontendUrl);
 
         sendEmail(to, "SIGRH — Votre mot de passe a été modifié",
             wrap("Sécurité du compte", body));

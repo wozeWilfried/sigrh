@@ -16,9 +16,9 @@ import useCreateLeave from '../hooks/useCreateLeave'
 import { getAvatarColor, getInitials } from '../utils/leaveUtils'
 
 const LEAVE_TYPES = [
-  { value: 'ANNUEL', label: 'Congé annuel', emoji: '🏖️' },
-  { value: 'MALADIE', label: 'Congé maladie', emoji: '🏥' },
-  { value: 'EXCEPTIONNEL', label: 'Congé exceptionnel', emoji: '⭐' },
+  { value: 'ANNUEL', label: 'Congé annuel' },
+  { value: 'MALADIE', label: 'Congé maladie' },
+  { value: 'EXCEPTIONNEL', label: 'Congé exceptionnel' },
 ]
 
 /** ─── Main Modal ──────────────────────────────────────────────────────────── */
@@ -268,7 +268,7 @@ export default function CreateLeaveModal({ open, onClose, onSuccess }) {
               >
                 {LEAVE_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
-                    {t.emoji} {t.label}
+                    {t.label}
                   </option>
                 ))}
               </select>
