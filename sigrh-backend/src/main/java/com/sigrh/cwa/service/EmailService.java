@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -156,5 +158,59 @@ public class EmailService {
 
         sendEmail(to, "SIGRH — Votre mot de passe a été modifié",
             wrap("Sécurité du compte", body));
+    }
+
+    public void sendAlertNotification(List<String> recipients, List<Map<String, Object>> alertes) {
+        if (recipients == null || recipients.isEmpty() || alertes == null || alertes.isEmpty()) {
+            return;
+        }
+
+        StringBuilder rows = new StringBuilder();
+        for (Map<String, Object> a : alertes) {
+            String niveau = String.valueOf(a.get("niveau"));
+            String color = switch (niveau) {
+                case "CRITIQUE" -> "#dc2626";
+                case "ELEVE"    -> "#ea580c";
+                case "MOYEN"    -> "#d97706";
+                default         -> "#16a34a";
+            };
+            rows.append("""
+                <tr>
+                    <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#1e293b;">%s</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#475569;">%s</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;"><span style="background:%s;color:#ffffff;padding:2px 10px;border-radius:9999px;font-size:12px;font-weight:700;">%s</span></td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#475569;">%s</td>
+                </tr>
+                """.formatted(a.get("employe"), a.get("type"), color, niveau, a.get("scoreRisque")));
+        }
+
+        String body = """
+            <h2>%d nouvelle(s) alerte(s) RH détectée(s)</h2>
+            <p>L'analyse prédictive a identifié des risques nécessitant votre attention. Traitez les alertes depuis votre espace RH.</p>
+            <table style="width:100%%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;font-size:13px;margin-top:12px;">
+                <thead>
+                    <tr style="background:#f8fafc;">
+                        <th style="padding:10px 12px;text-align:left;color:#475569;">Employé</th>
+                        <th style="padding:10px 12px;text-align:left;color:#475569;">Type</th>
+                        <th style="padding:10px 12px;text-align:left;color:#475569;">Niveau</th>
+                        <th style="padding:10px 12px;text-align:left;color:#475569;">Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    %s
+                </tbody>
+            </table>
+            <p style="text-align:center;margin-top:20px;">
+                <a href="%s/alertes" class="btn">Voir toutes les alertes</a>
+            </p>
+            """.formatted(alertes.size(), rows, frontendUrl);
+
+        String subject = alertes.size() > 1
+            ? "SIGRH — " + alertes.size() + " nouvelles alertes RH à traiter"
+            : "SIGRH — Nouvelle alerte RH à traiter";
+
+        for (String to : recipients) {
+            sendEmail(to, subject, wrap("Alertes RH", body));
+        }
     }
 }

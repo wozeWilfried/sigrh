@@ -4,6 +4,9 @@ import com.sigrh.cwa.entity.*;
 import com.sigrh.cwa.enums.*;
 import com.sigrh.cwa.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
@@ -22,6 +25,7 @@ import java.util.stream.*;
  * @author Équipe SIGRH
  * @version 1.0
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AnalysePredictiveService {
@@ -31,6 +35,11 @@ public class AnalysePredictiveService {
     private final PresenceRepository   presenceRepo;
     private final FichePaieRepository  paieRepo;
     private final AlerteRHRepository   alerteRepo;
+    private final UserRepository       userRepo;
+    private final EmailService         emailService;
+
+    @Value("${app.alert.recipients:}")
+    private String alertRecipientsConfig;
 
     // ─────────────────────────────────────────────
     // TABLEAU DE BORD PRÉDICTIF — vue d'ensemble
@@ -277,15 +286,56 @@ public class AnalysePredictiveService {
     // Générer les alertes pour tous les employés actifs
     public Map<String, Object> genererToutesLesAlertes() {
         List<Employe> actifs = employeRepo.findByStatut(StatutEmploye.ACTIF);
-        int nbGenerees = 0;
+        List<Map<String, Object>> generees = new ArrayList<>();
         for (Employe emp : actifs) {
             double score = calculerScoreRisqueRapide(emp);
             if (score >= 0.5) {
-                genererAlerte(emp, TypeAlerte.TURNOVER, score, List.of("Analyse automatique"));
-                nbGenerees++;
+                AlerteRH alerte = genererAlerte(emp, TypeAlerte.TURNOVER, score, List.of("Analyse automatique"));
+                if (alerte != null) {
+                    generees.add(mapAlerte(alerte));
+                }
             }
         }
-        return Map.of("alertesGenerees", nbGenerees, "employesAnalyses", actifs.size());
+        if (!generees.isEmpty()) {
+            notifierAlertes(generees);
+            log.info("Génération d'alertes : {} nouvelle(s) alerte(s), notification envoyée à {} destinataire(s)",
+                generees.size(), collecterDestinataires().size());
+        }
+        return Map.of("alertesGenerees", generees.size(), "employesAnalyses", actifs.size());
+    }
+
+    // Exécution automatique quotidienne (8h00) + notification par email
+    @Scheduled(cron = "0 0 8 * * *")
+    public void genererAlertesAutomatiquement() {
+        log.info("Exécution planifiée de l'analyse prédictive des alertes");
+        genererToutesLesAlertes();
+    }
+
+    // ─────────────────────────────────────────────
+    // NOTIFICATION DES ALERTES (email RH/ADMIN)
+    // ─────────────────────────────────────────────
+    private List<String> collecterDestinataires() {
+        Set<String> destinataires = new LinkedHashSet<>();
+        if (alertRecipientsConfig != null && !alertRecipientsConfig.isBlank()) {
+            for (String email : alertRecipientsConfig.split(",")) {
+                String e = email.trim();
+                if (!e.isEmpty()) destinataires.add(e);
+            }
+        }
+        userRepo.findAllByRoleIn(List.of(Role.ADMIN, Role.RH)).stream()
+            .map(User::getEmail)
+            .filter(e -> e != null && !e.isBlank() && !e.toLowerCase().endsWith("@sigrh.com"))
+            .forEach(destinataires::add);
+        return new ArrayList<>(destinataires);
+    }
+
+    private void notifierAlertes(List<Map<String, Object>> alertes) {
+        List<String> destinataires = collecterDestinataires();
+        if (destinataires.isEmpty()) {
+            log.warn("Aucun destinataire configuré pour les notifications d'alertes (app.alert.recipients vide)");
+            return;
+        }
+        emailService.sendAlertNotification(destinataires, alertes);
     }
 
     // ─────────────────────────────────────────────
@@ -355,13 +405,13 @@ public class AnalysePredictiveService {
         return NiveauAlerte.FAIBLE;
     }
 
-    private void genererAlerte(Employe emp, TypeAlerte type, double score, List<String> facteurs) {
+    private AlerteRH genererAlerte(Employe emp, TypeAlerte type, double score, List<String> facteurs) {
         // Éviter les doublons d'alerte le même jour
         boolean existeDeja = alerteRepo.findByEmployeId(emp.getId()).stream()
             .anyMatch(a -> a.getType() == type
                 && a.getDateAlerte() != null
                 && a.getDateAlerte().equals(LocalDate.now()));
-        if (existeDeja) return;
+        if (existeDeja) return null;
 
         AlerteRH alerte = AlerteRH.builder()
             .employe(emp)
@@ -372,7 +422,7 @@ public class AnalysePredictiveService {
             .dateAlerte(LocalDate.now())
             .traitee(false)
             .build();
-        alerteRepo.save(alerte);
+        return alerteRepo.save(alerte);
     }
 
     private String getRecommandationTurnover(double score) {
