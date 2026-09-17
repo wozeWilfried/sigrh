@@ -1,17 +1,17 @@
 services:
   - type: web
     name: sigrh-backend
-    runtime: java
+    runtime: docker
     plan: free
     rootDir: sigrh-backend
-    buildCommand: mvn clean package -DskipTests
-    startCommand: java -jar target/sigrh-0.0.1-SNAPSHOT.jar
-    autoDeploy: true
+    dockerfilePath: ./Dockerfile
+    dockerContext: ./
+    autoDeployTrigger: commit
     healthCheckPath: /api-docs
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: CORS_ORIGINS
-        sync: false
+        value: https://sigrh-frontend-1hhsjca8l-johntarick51-9571.vercel.app,http://localhost:5173
       - key: JAVA_VERSION
         value: "21"
