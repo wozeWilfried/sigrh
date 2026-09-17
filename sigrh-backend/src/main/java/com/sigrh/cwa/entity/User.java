@@ -50,6 +50,9 @@ public class User {
     /** Fin de validité du mot de passe temporaire (null = sans expiration). */
     private LocalDateTime tempPasswordExpiresAt;
 
+    /** Mot de passe temporaire en clair (affiché à la RH tant qu'il est valable ; null après changement). */
+    private String tempPasswordPlain;
+
     /** Employé associé (optionnel pour les admins) */
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonIgnoreProperties("user")

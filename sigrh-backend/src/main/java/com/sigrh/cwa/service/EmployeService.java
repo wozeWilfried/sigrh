@@ -209,6 +209,7 @@ public class EmployeService {
             .active(true)
             .firstLogin(true)
             .tempPasswordExpiresAt(customPassword ? java.time.LocalDateTime.now().plusHours(tempPasswordHours) : null)
+            .tempPasswordPlain(customPassword ? customTemp : null)
             .build();
         user = userRepo.save(user);
 
@@ -347,7 +348,23 @@ public class EmployeService {
             .departementId(e.getDepartement() != null ? e.getDepartement().getId() : null)
             .departementNom(e.getDepartement() != null ? e.getDepartement().getNom() : null)
             .statut(e.getStatut() != null ? e.getStatut().name() : null)
+            .tempPassword(validTempPassword(e))
             .build();
+    }
+
+    /**
+     * Renvoie le mot de passe temporaire utilisable par l'employé tant que le compte
+     * est en première connexion et non expiré : le mot de passe personnalisé s'il existe,
+     * sinon le mot de passe provisoire commun. Renvoie null après changement ou expiration.
+     */
+    private String validTempPassword(Employe e) {
+        User u = e.getUser();
+        if (u == null || !u.isFirstLogin()) return null;
+        if (u.getTempPasswordExpiresAt() != null
+                && java.time.LocalDateTime.now().isAfter(u.getTempPasswordExpiresAt())) {
+            return null;
+        }
+        return u.getTempPasswordPlain() != null ? u.getTempPasswordPlain() : defaultPassword;
     }
 
     private Employe toEntity(EmployeDTO dto) {

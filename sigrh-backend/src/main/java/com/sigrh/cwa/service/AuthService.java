@@ -140,6 +140,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setFirstLogin(false);
         user.setTempPasswordExpiresAt(null);
+        user.setTempPasswordPlain(null);
         userRepository.save(user);
 
         if (user.getEmail() != null) {

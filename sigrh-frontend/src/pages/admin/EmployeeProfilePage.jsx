@@ -268,6 +268,22 @@ function InformationTab({ employee }) {
           <InfoItem label="Département" value={employee.departementNom ?? employee.departmentName ?? '-'} />
           <InfoItem label="Poste" value={employee.poste ?? employee.position ?? '-'} />
         </div>
+
+        {employee.tempPassword && (
+          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-amber-600">
+              Mot de passe temporaire
+            </p>
+            <div className="mt-1 flex items-center gap-2">
+              <KeyRound size={16} className="text-amber-600" />
+              <span className="font-mono text-sm font-bold text-slate-900">{employee.tempPassword}</span>
+            </div>
+            <p className="mt-1 text-xs text-amber-700">
+              Valable jusqu'à la première connexion de l'employé (48 h pour un mot de passe personnalisé).
+              Disparaît dès qu'il change son mot de passe.
+            </p>
+          </div>
+        )}
       </Card>
 
       <Card className="p-6">
