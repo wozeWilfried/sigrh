@@ -3,6 +3,7 @@ package com.sigrh.cwa.entity;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime;
 import java.util.Set;
 import com.sigrh.cwa.enums.Role;
 
@@ -45,6 +46,9 @@ public class User {
     /** Indique si l'utilisateur doit changer son mot de passe à la première connexion */
     @Builder.Default
     private boolean firstLogin = true;
+
+    /** Fin de validité du mot de passe temporaire (null = sans expiration). */
+    private LocalDateTime tempPasswordExpiresAt;
 
     /** Employé associé (optionnel pour les admins) */
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)

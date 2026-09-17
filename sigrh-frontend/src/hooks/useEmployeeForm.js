@@ -16,6 +16,7 @@ const initialValues = {
   salaire: '',
   statut: 'ACTIF',
   role: 'EMPLOYE',
+  tempPassword: '',
 }
 
 const requiredMessages = {
@@ -75,6 +76,7 @@ function buildEmployeePayload(values) {
     salaire: values.salaire === '' ? null : Number(values.salaire),
     statut: values.statut || 'ACTIF',
     role: values.role || 'EMPLOYE',
+    tempPassword: values.tempPassword.trim() || null,
   }
 }
 
@@ -89,6 +91,10 @@ function validateField(name, value) {
 
   if (name === 'salaire' && value !== '' && Number(value) < 0) {
     return 'Le salaire ne peut pas être négatif.'
+  }
+
+  if (name === 'tempPassword' && value && value.trim().length < 6) {
+    return 'Le mot de passe temporaire doit contenir au moins 6 caractères.'
   }
 
   return ''

@@ -48,6 +48,14 @@ public class AuthService {
             new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
         User user = userRepository.findByUsername(auth.getName()).orElseThrow();
+
+        if (user.isFirstLogin()
+            && user.getTempPasswordExpiresAt() != null
+            && java.time.LocalDateTime.now().isAfter(user.getTempPasswordExpiresAt())) {
+            throw new org.springframework.security.authentication.BadCredentialsException(
+                "Votre mot de passe temporaire a expiré. Contactez l'administration pour le réinitialiser.");
+        }
+
         String accessToken = jwtUtil.generateAccessToken(user.getUsername(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getUsername(), user.getRole().name());
 
@@ -131,6 +139,7 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setFirstLogin(false);
+        user.setTempPasswordExpiresAt(null);
         userRepository.save(user);
 
         if (user.getEmail() != null) {

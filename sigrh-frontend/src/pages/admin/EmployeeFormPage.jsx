@@ -198,6 +198,22 @@ export default function EmployeeFormPage() {
                   <p className="mt-2 text-xs text-slate-400">
                     Le rôle détermine l'accès à l'interface de l'application.
                   </p>
+                  <div className="mt-5 grid gap-5 md:grid-cols-2">
+                    <TextField
+                      label="Mot de passe temporaire"
+                      name="tempPassword"
+                      type="text"
+                      value={values.tempPassword}
+                      error={errors.tempPassword}
+                      placeholder="SIGRH@2026"
+                      onChange={updateField}
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-slate-400">
+                    Optionnel. Vide = mot de passe commun. S'il est renseigné, il est
+                    valable {`48 h`} maximum et disparaît dès que l'employé modifie son
+                    mot de passe à la première connexion.
+                  </p>
                 </div>
               )}
             </FormSection>

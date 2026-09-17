@@ -44,6 +44,10 @@ public class EmployeService {
     @Value("${app.employee.default-password:SIGRH@2026}")
     private String defaultPassword;
 
+    /** Durée de validité du mot de passe temporaire personnalisé (heures). */
+    @Value("${app.employee.temp-password-hours:48}")
+    private long tempPasswordHours;
+
     /**
      * Récupère tous les employés avec filtres et pagination (accès filtré selon le rôle).
      *
@@ -182,7 +186,12 @@ public class EmployeService {
             throw new RuntimeException("Un employé avec cet email existe déjà : " + email);
         }
 
-        String rawPassword = defaultPassword;
+        String customTemp = dto.getTempPassword();
+        boolean customPassword = customTemp != null && !customTemp.isBlank();
+        if (customPassword && customTemp.length() < 6) {
+            throw new IllegalArgumentException("Le mot de passe temporaire doit contenir au moins 6 caractères");
+        }
+        String rawPassword = customPassword ? customTemp : defaultPassword;
 
         Role role = Role.EMPLOYE;
         if (dto.getRole() != null && !dto.getRole().isBlank()) {
@@ -199,6 +208,7 @@ public class EmployeService {
             .role(role)
             .active(true)
             .firstLogin(true)
+            .tempPasswordExpiresAt(customPassword ? java.time.LocalDateTime.now().plusHours(tempPasswordHours) : null)
             .build();
         user = userRepo.save(user);
 
@@ -215,7 +225,10 @@ public class EmployeService {
 
         emailService.sendCredentials(email, username, rawPassword);
 
-        String message = "Employé créé avec succès. Mot de passe provisoire commun : " + rawPassword;
+        String message = customPassword
+            ? "Employé créé avec succès. Mot de passe temporaire : " + rawPassword
+                + " (valable " + tempPasswordHours + "h, à changer à la première connexion)"
+            : "Employé créé avec succès. Mot de passe provisoire commun : " + rawPassword;
 
         return CreateEmployeResponse.builder()
             .employe(toDTO(e))

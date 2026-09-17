@@ -59,4 +59,7 @@ public class EmployeDTO {
 
     /** Rôle utilisateur (EMPLOYE, MANAGER, SECRETAIRE) pour la création du compte */
     private String role;
+
+    /** Mot de passe temporaire fourni à la création (optionnel ; vide = mot de passe commun) */
+    private String tempPassword;
 }
