@@ -23,6 +23,11 @@ public class EmailService {
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
+    private static final java.util.concurrent.ExecutorService emailExecutor =
+        java.util.concurrent.Executors.newFixedThreadPool(3);
+    private static final int MAX_ATTEMPTS = 3;
+    private static final long RETRY_DELAY_MS = 3000;
+
     private static final String STYLE = """
         <style>
             body { margin:0; padding:0; background-color:#f4f7fc; font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif; }
@@ -76,23 +81,40 @@ public class EmailService {
     }
 
     private void sendEmail(String to, String subject, String htmlBody) {
-        new Thread(() -> {
-            try {
-                MimeMessage message = mailSender.createMimeMessage();
-                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-                helper.setFrom(fromAddress);
-                helper.setTo(to);
-                helper.setSubject(subject);
-                helper.setText(htmlBody, true);
+        emailExecutor.submit(() -> {
+            Exception lastError = null;
+            for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+                try {
+                    MimeMessage message = mailSender.createMimeMessage();
+                    MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+                    helper.setFrom(fromAddress);
+                    helper.setTo(to);
+                    helper.setSubject(subject);
+                    helper.setText(htmlBody, true);
 
-                mailSender.send(message);
-                log.info("Email envoyé avec succès à {}", to);
-            } catch (Exception e) {
-                log.error("Erreur lors de l'envoi de l'email à {} : {}",
-                    to, e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
-                log.warn("Contenu (fallback) : Sujet={}", subject);
+                    mailSender.send(message);
+                    log.info("Email envoyé avec succès à {} (sujet: {})", to, subject);
+                    return;
+                } catch (Exception e) {
+                    lastError = e;
+                    log.warn("Tentative {}/{} d'envoi à {} échouée : {}",
+                        attempt, MAX_ATTEMPTS, to,
+                        e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+                    if (attempt < MAX_ATTEMPTS) {
+                        try {
+                            Thread.sleep(RETRY_DELAY_MS);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                }
             }
-        }).start();
+            log.error("ÉCHEC définitif de l'envoi de l'email à {} (sujet: {}) : {}",
+                to, subject,
+                lastError != null && lastError.getMessage() != null
+                    ? lastError.getMessage() : String.valueOf(lastError));
+        });
     }
 
     public void sendCredentials(String to, String username, String tempPassword) {

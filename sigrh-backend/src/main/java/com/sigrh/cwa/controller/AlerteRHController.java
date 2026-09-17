@@ -22,16 +22,7 @@ public class AlerteRHController {
             @RequestParam(required = false) String departement,
             @RequestParam(required = false) String statut
     ) {
-        List<Map<String, Object>> alertes;
-        if (statut == null || statut.isBlank()) {
-            alertes = analyseService.getAlertes(false);
-        } else if ("ACTIVE".equalsIgnoreCase(statut)) {
-            alertes = analyseService.getAlertes(true);
-        } else if ("TRAITEE".equalsIgnoreCase(statut)) {
-            alertes = analyseService.getAlertesByTraitee(true);
-        } else {
-            alertes = analyseService.getAlertes(false);
-        }
+        List<Map<String, Object>> alertes = analyseService.getAlertesFrontend(statut);
 
         if (type != null && !type.isBlank()) {
             alertes = alertes.stream()

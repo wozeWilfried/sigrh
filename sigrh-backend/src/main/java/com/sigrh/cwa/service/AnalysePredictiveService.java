@@ -241,6 +241,48 @@ public class AnalysePredictiveService {
         return alerteRepo.findByTraitee(traitee).stream().map(this::mapAlerte).collect(Collectors.toList());
     }
 
+    // Alertes au format attendu par le frontend (cloche + page /alertes)
+    public List<Map<String, Object>> getAlertesFrontend(String statut) {
+        List<AlerteRH> alertes;
+        if (statut == null || statut.isBlank()) {
+            alertes = alerteRepo.findAll();
+        } else if ("ACTIVE".equalsIgnoreCase(statut)) {
+            alertes = alerteRepo.findByTraitee(false);
+        } else if ("TRAITEE".equalsIgnoreCase(statut)) {
+            alertes = alerteRepo.findByTraitee(true);
+        } else {
+            alertes = alerteRepo.findAll();
+        }
+        return alertes.stream()
+            .sorted(Comparator.comparing(
+                AlerteRH::getDateAlerte, Comparator.nullsLast(Comparator.reverseOrder())))
+            .map(this::mapAlerteFrontend)
+            .collect(Collectors.toList());
+    }
+
+    private Map<String, Object> mapAlerteFrontend(AlerteRH a) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id",          a.getId());
+        m.put("type",        niveauToType(a.getNiveau()));
+        m.put("employeNom",  a.getEmploye().getNom() + " " + a.getEmploye().getPrenom());
+        m.put("employeId",   a.getEmploye().getId());
+        m.put("departement", a.getEmploye().getDepartement() != null ? a.getEmploye().getDepartement().getNom() : "");
+        m.put("niveau",      a.getNiveau().name());
+        m.put("message",     a.getMessage());
+        m.put("scoreRisque", Math.round(a.getScoreRisque() * 100) + "%");
+        m.put("date",        a.getDateAlerte() != null ? a.getDateAlerte() + "T08:00:00" : null);
+        m.put("statut",      a.isTraitee() ? "TRAITEE" : "ACTIVE");
+        return m;
+    }
+
+    private String niveauToType(NiveauAlerte niveau) {
+        return switch (niveau) {
+            case CRITIQUE -> "CRITICAL";
+            case ELEVE, MOYEN -> "WARNING";
+            default -> "INFO";
+        };
+    }
+
     public long countAlertesByStatut(String statut) {
         if (statut == null || statut.isBlank()) {
             return alerteRepo.count();
