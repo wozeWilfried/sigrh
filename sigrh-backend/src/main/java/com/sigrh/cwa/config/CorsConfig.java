@@ -3,7 +3,6 @@ package com.sigrh.cwa.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
 import org.springframework.web.cors.*;
-import org.springframework.web.filter.CorsFilter;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,15 +35,5 @@ public class CorsConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
-    }
-
-    /**
-     * Crée un filtre CORS pour appliquer la configuration à tous les endpoints.
-     * 
-     * @return Filtre CORS
-     */
-    @Bean
-    public CorsFilter corsFilter() {
-        return new CorsFilter(corsConfigurationSource());
     }
 }
