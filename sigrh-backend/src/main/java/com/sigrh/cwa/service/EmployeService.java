@@ -6,9 +6,9 @@ import com.sigrh.cwa.repository.*;
 import com.sigrh.cwa.enums.Genre;
 import com.sigrh.cwa.enums.Role;
 import com.sigrh.cwa.enums.StatutEmploye;
-import com.sigrh.cwa.security.PasswordGenerator;
 import com.sigrh.cwa.security.SecurityHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +39,10 @@ public class EmployeService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final SecurityHelper security;
+
+    /** Mot de passe commun imposé à tout nouvel employé (changé à la première connexion). */
+    @Value("${app.employee.default-password:SIGRH@2026}")
+    private String defaultPassword;
 
     /**
      * Récupère tous les employés avec filtres et pagination (accès filtré selon le rôle).
@@ -178,7 +182,7 @@ public class EmployeService {
             throw new RuntimeException("Un employé avec cet email existe déjà : " + email);
         }
 
-        String rawPassword = PasswordGenerator.generate();
+        String rawPassword = defaultPassword;
 
         Role role = Role.EMPLOYE;
         if (dto.getRole() != null && !dto.getRole().isBlank()) {
@@ -211,7 +215,7 @@ public class EmployeService {
 
         emailService.sendCredentials(email, username, rawPassword);
 
-        String message = "Employé créé avec succès. Identifiants envoyés à " + email;
+        String message = "Employé créé avec succès. Mot de passe provisoire commun : " + rawPassword;
 
         return CreateEmployeResponse.builder()
             .employe(toDTO(e))

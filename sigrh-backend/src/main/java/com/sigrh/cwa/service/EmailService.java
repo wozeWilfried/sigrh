@@ -20,6 +20,12 @@ public class EmailService {
     @Value("${app.mail.from}")
     private String fromAddress;
 
+    @Value("${app.mail.provider:gmail}")
+    private String mailProvider;
+
+    @Value("${app.mail.brevo.api-key:}")
+    private String brevoApiKey;
+
     @Value("${app.frontend.url}")
     private String frontendUrl;
 
@@ -85,14 +91,11 @@ public class EmailService {
             Exception lastError = null;
             for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
                 try {
-                    MimeMessage message = mailSender.createMimeMessage();
-                    MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-                    helper.setFrom(fromAddress);
-                    helper.setTo(to);
-                    helper.setSubject(subject);
-                    helper.setText(htmlBody, true);
-
-                    mailSender.send(message);
+                    if ("brevo".equalsIgnoreCase(mailProvider)) {
+                        sendViaBrevo(to, subject, htmlBody);
+                    } else {
+                        sendViaJavaMail(to, subject, htmlBody);
+                    }
                     log.info("Email envoyé avec succès à {} (sujet: {})", to, subject);
                     return;
                 } catch (Exception e) {
@@ -115,6 +118,57 @@ public class EmailService {
                 lastError != null && lastError.getMessage() != null
                     ? lastError.getMessage() : String.valueOf(lastError));
         });
+    }
+
+    private void sendViaJavaMail(String to, String subject, String htmlBody) throws Exception {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        helper.setFrom(fromAddress);
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(htmlBody, true);
+        mailSender.send(message);
+    }
+
+    private void sendViaBrevo(String to, String subject, String htmlBody) throws Exception {
+        if (brevoApiKey == null || brevoApiKey.isBlank()) {
+            throw new IllegalStateException("BREVO_API_KEY non configuré (app.mail.brevo.api-key)");
+        }
+        String payload = """
+            {"sender":{"email":"%s","name":"SIGRH"},"to":[{"email":"%s"}],"subject":"%s","htmlContent":"%s"}
+            """.formatted(fromAddress, to, subject, json(htmlBody));
+
+        java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+            .connectTimeout(java.time.Duration.ofSeconds(10)).build();
+        java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+            .uri(java.net.URI.create("https://api.brevo.com/v3/smtp/email"))
+            .timeout(java.time.Duration.ofSeconds(30))
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .header("api-key", brevoApiKey)
+            .POST(java.net.http.HttpRequest.BodyPublishers.ofString(payload, java.nio.charset.StandardCharsets.UTF_8))
+            .build();
+        java.net.http.HttpResponse<String> response = client.send(request,
+            java.net.http.HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IllegalStateException("Brevo API " + response.statusCode() + " : " + response.body());
+        }
+    }
+
+    private static String json(String html) {
+        StringBuilder sb = new StringBuilder();
+        for (char c : html.toCharArray()) {
+            switch (c) {
+                case '"'  -> sb.append("\\\"");
+                case '\\' -> sb.append("\\\\");
+                case '\n' -> sb.append("\\n");
+                case '\r' -> sb.append("\\r");
+                case '\t' -> sb.append("\\t");
+                default   -> sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     public void sendCredentials(String to, String username, String tempPassword) {
