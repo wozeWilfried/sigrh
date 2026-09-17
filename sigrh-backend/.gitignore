@@ -34,3 +34,5 @@ build/
 
 
 *.log
+### H2 local DB ###
+data/

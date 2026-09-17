@@ -235,9 +235,16 @@ public class EmployeService {
     @Transactional
     public EmployeDTO update(Long id, EmployeDTO dto) {
         Employe existing = employeRepo.findById(id).orElseThrow();
+        String newEmail = dto.getEmail();
+        String oldEmail = existing.getEmail() != null ? existing.getEmail() : "";
+        if (newEmail != null && !newEmail.isBlank()
+            && !newEmail.equalsIgnoreCase(oldEmail)
+            && userRepo.existsByEmail(newEmail)) {
+            throw new RuntimeException("Un employé avec cet email existe déjà : " + newEmail);
+        }
         existing.setNom(dto.getNom());
         existing.setPrenom(dto.getPrenom());
-        existing.setEmail(dto.getEmail());
+        existing.setEmail(newEmail);
         existing.setTelephone(dto.getTelephone());
         existing.setPoste(dto.getPoste());
         existing.setSalaire(dto.getSalaire());
@@ -245,7 +252,14 @@ public class EmployeService {
         if (dto.getDepartementId() != null) {
             existing.setDepartement(deptRepo.findById(dto.getDepartementId()).orElseThrow());
         }
-        return toDTO(employeRepo.save(existing));
+        Employe saved = employeRepo.save(existing);
+        if (saved.getUser() != null && newEmail != null && !newEmail.isBlank()
+            && !newEmail.equalsIgnoreCase(saved.getUser().getEmail())) {
+            User user = saved.getUser();
+            user.setEmail(newEmail);
+            userRepo.save(user);
+        }
+        return toDTO(saved);
     }
 
     private static final Map<StatutEmploye, Set<StatutEmploye>> VALID_TRANSITIONS = Map.of(
