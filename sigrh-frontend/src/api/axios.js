@@ -23,7 +23,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // Timeout de sécurité (30s) - augmenté pour les opérations longues
+  timeout: 90000, // 90s : tolère le réveil du serveur Render (cold start ~30-60s)
 })
 
 api.interceptors.request.use(
@@ -47,7 +47,14 @@ api.interceptors.response.use(
     }
 
     if (!response) {
-      dispatchToast('error', 'Erreur de connexion. Veuillez vérifier votre réseau.')
+      const cfg = error.config || {}
+      const method = (cfg.method || 'get').toLowerCase()
+      if (method === 'get' && !cfg._networkRetry) {
+        cfg._networkRetry = true
+        await new Promise((resolve) => setTimeout(resolve, 4000))
+        return api(cfg)
+      }
+      dispatchToast('error', 'Connexion au serveur impossible (serveur en veille ?). Patientez ~30 s puis réessayez.')
       return Promise.reject(error)
     }
 
