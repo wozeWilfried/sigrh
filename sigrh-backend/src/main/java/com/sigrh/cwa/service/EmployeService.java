@@ -264,6 +264,7 @@ public class EmployeService {
         existing.setPrenom(dto.getPrenom());
         existing.setEmail(newEmail);
         existing.setTelephone(dto.getTelephone());
+        if (dto.getAdresse() != null) existing.setAdresse(dto.getAdresse());
         existing.setPoste(dto.getPoste());
         existing.setSalaire(dto.getSalaire());
         existing.setStatut(StatutEmploye.valueOf(dto.getStatut()));
@@ -345,6 +346,7 @@ public class EmployeService {
             .genre(e.getGenre() != null ? e.getGenre().name() : null)
             .dateNaissance(e.getDateNaissance()).dateEmbauche(e.getDateEmbauche())
             .poste(e.getPoste()).salaire(e.getSalaire()).photoUrl(e.getPhotoUrl())
+            .adresse(e.getAdresse())
             .departementId(e.getDepartement() != null ? e.getDepartement().getId() : null)
             .departementNom(e.getDepartement() != null ? e.getDepartement().getNom() : null)
             .statut(e.getStatut() != null ? e.getStatut().name() : null)
@@ -376,6 +378,7 @@ public class EmployeService {
         e.setDateNaissance(dto.getDateNaissance());
         e.setDateEmbauche(dto.getDateEmbauche());
         e.setPoste(dto.getPoste()); e.setSalaire(dto.getSalaire());
+        if (dto.getAdresse() != null) e.setAdresse(dto.getAdresse());
         e.setStatut(StatutEmploye.ACTIF);
         if (dto.getDepartementId() != null) {
             e.setDepartement(deptRepo.findById(dto.getDepartementId()).orElseThrow());

@@ -77,6 +77,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/dashboard/**", "/api/search").hasAnyRole("ADMIN", "RH", "SECRETAIRE", "MANAGER")
 
                 // ── AUTHENTIFIÉ (contrôle d'accès affiné dans les services) ──
+                .requestMatchers("/api/profile/**").authenticated()
                 .requestMatchers("/api/employes/**").authenticated()
                 .requestMatchers("/api/conges/**").authenticated()
                 .requestMatchers("/api/presences/**").authenticated()

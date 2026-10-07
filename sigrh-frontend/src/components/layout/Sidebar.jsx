@@ -18,6 +18,7 @@ import {
   Toolbox,
   UserCog,
   UserPlus,
+  UserRound,
   Users,
   AlertTriangle,
   Eye,
@@ -106,6 +107,12 @@ const adminNavigation = [
       { label: 'Paramètres', path: '/admin/parametres', icon: Settings },
     ],
   },
+  {
+    section: 'Mon compte',
+    items: [
+      { label: 'Mon profil', path: '/profil', icon: UserRound },
+    ],
+  },
 ]
 
 const managerNavigation = [
@@ -169,6 +176,12 @@ const managerNavigation = [
       },
     ],
   },
+  {
+    section: 'Mon compte',
+    items: [
+      { label: 'Mon profil', path: '/profil', icon: UserRound },
+    ],
+  },
 ]
 
 const secretaryNavigation = [
@@ -183,6 +196,12 @@ const secretaryNavigation = [
           { label: 'Historique & Statistiques', path: '/presences/historique' },
         ],
       },
+    ],
+  },
+  {
+    section: 'Mon compte',
+    items: [
+      { label: 'Mon profil', path: '/profil', icon: UserRound },
     ],
   },
 ]
@@ -212,6 +231,12 @@ const employeeNavigation = [
         icon: CalendarPlus,
         path: '/employe/conges/demander',
       },
+    ],
+  },
+  {
+    section: 'Mon compte',
+    items: [
+      { label: 'Mon profil', path: '/profil', icon: UserRound },
     ],
   },
 ]

@@ -62,4 +62,7 @@ public class EmployeDTO {
 
     /** Mot de passe temporaire fourni à la création (optionnel ; vide = mot de passe commun) */
     private String tempPassword;
+
+    /** Adresse postale */
+    private String adresse;
 }

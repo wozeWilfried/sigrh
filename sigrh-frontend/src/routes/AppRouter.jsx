@@ -33,6 +33,7 @@ import ListeMateriel from '../pages/manager/ListeMateriel'
 import AlertsPage from '../pages/admin/AlertsPage'
 import NotFoundPage from '../pages/NotFoundPage'
 import FirstLoginPasswordPage from '../pages/FirstLoginPasswordPage'
+import ProfilePage from '../pages/ProfilePage'
 
 export default function AppRouter() {
   const { user, loading } = useAuth()
@@ -58,16 +59,22 @@ export default function AppRouter() {
       <Route
         path="/"
         element={
-          needsPasswordChange && user?.employeId
-            ? <Navigate to={`/employees/${user.employeId}`} replace />
-            : needsPasswordChange
-              ? <Navigate to="/auth/change-password" replace />
-              : isValidUser
-                ? <Navigate to={`/${userRole.toLowerCase()}`} replace />
-                : <Login />
+          needsPasswordChange
+            ? <Navigate to="/profil" replace />
+            : isValidUser
+              ? <Navigate to={`/${userRole.toLowerCase()}`} replace />
+              : <Login />
         }
       />
       <Route path="/auth/change-password" element={<FirstLoginPasswordPage />} />
+      <Route
+        path="/profil"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/admin"
         element={

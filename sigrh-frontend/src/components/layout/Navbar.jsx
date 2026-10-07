@@ -117,14 +117,17 @@ export default function Navbar({ onMobileToggle }) {
                     <p className="text-sm font-semibold text-slate-900">{user?.username}</p>
                     <p className="text-xs text-slate-500">{roleDisplayName()}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowDropdown(false)}
-                    className="mt-0.5 flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
-                  >
-                    <User size={15} strokeWidth={1.9} />
-                    Mon profil
-                  </button>
+<button
+                type="button"
+                onClick={() => {
+                  setShowDropdown(false)
+                  navigate('/profil')
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              >
+                <User size={17} strokeWidth={1.9} className="text-slate-400" />
+                Mon profil
+              </button>
                   <button
                     type="button"
                     onClick={handleLogout}

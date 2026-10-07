@@ -57,8 +57,12 @@ public class Employe {
     /** Salaire mensuel de base */
     private Double salaire;
 
-    /** URL de la photo de profil */
+    /** Photo de profil : URL ou image encodée en base64 (data URL) */
+    @Lob
     private String photoUrl;
+
+    /** Adresse postale de l'employé */
+    private String adresse;
 
     /** Département d'affectation */
     @ManyToOne
