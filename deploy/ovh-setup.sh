@@ -27,9 +27,9 @@ log() { printf "\n\033[1;32m==> %s\033[0m\n" "$*"; }
 if ! command -v docker >/dev/null 2>&1; then
   log "Installation de Docker"
   curl -fsSL https://get.docker.com | $SUDO sh
-  $SUDO usermod -aG docker "$(whoami)" || true
+  $SUDO usermod -aG docker "${SUDO_USER:-$(whoami)}" >/dev/null 2>&1 || true
 fi
-log "Docker : $(docker --version)"
+log "Docker : $($SUDO docker --version)"
 
 # --- 2. Swap (sécurité anti-OOM pour 4 Go) ---------------------------
 if ! swapon --show | grep -q .; then
@@ -112,4 +112,4 @@ else
   echo -e "\nAccès : https://${DOMAIN}  (compte admin / admin123)"
   echo "Vérifie que l'enregistrement DNS A pointe bien vers ${SERVER_IP}."
 fi
-echo "Logs backend : docker compose -f docker-compose.prod.yml logs -f backend"
+echo "Logs backend : $SUDO docker compose -f docker-compose.prod.yml logs -f backend"
