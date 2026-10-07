@@ -174,6 +174,7 @@ public class PresenceService {
         totals.put("PRESENT", 0L);
         totals.put("RETARD", 0L);
         totals.put("ABSENT", 0L);
+        totals.put("CONGE", 0L);
         totals.put("EMPTY", 0L);
         return totals;
     }
@@ -186,7 +187,8 @@ public class PresenceService {
 
         for (String day : days) {
             Map<String, Object> attendance = (Map<String, Object>) attendances.get(day);
-            String statut = attendance == null ? "EMPTY" : attendance.get("statut").toString();
+            Object statutObj = attendance == null ? null : attendance.get("statut");
+            String statut = statutObj == null ? "EMPTY" : statutObj.toString();
             updateTotals(totals, statut);
             if ("ABSENT".equals(statut)) absences++;
             updateWeeklyStats(weeklyMap, day, statut);
@@ -195,7 +197,7 @@ public class PresenceService {
     }
 
     private void updateTotals(Map<String, Long> totals, String statut) {
-        totals.put(statut, totals.get(statut) + 1);
+        totals.merge(statut, 1L, Long::sum);
     }
 
     private void updateWeeklyStats(Map<String, Map<String, Long>> weeklyMap, String day, String statut) {
