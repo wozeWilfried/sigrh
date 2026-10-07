@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+const API_BASE = import.meta.env.VITE_API_URL || '/api'
+
 const dispatchToast = (type, message) => {
   window.dispatchEvent(new CustomEvent('app:toast', { detail: { type, message } }))
 }
@@ -18,12 +20,47 @@ function processQueue(error, token = null) {
   failedQueue = []
 }
 
+// Client brut (sans intercepteurs) utilisé uniquement pour réveiller le backend.
+const wakeClient = axios.create({ timeout: 90000 })
+
+let wakePromise = null
+let lastAwakeAt = 0
+const AWAKE_TTL_MS = 2 * 60 * 1000 // on considère le serveur réveillé pendant 2 min
+
+/**
+ * Envoie un ping à /health pour réveiller le backend (cold start Render ~30-60 s).
+ * Les appels concurrents sont mutualisés et le résultat mis en cache 2 minutes.
+ *
+ * @param {{force?: boolean}} options force = true pour ignorer le cache
+ * @returns {Promise<boolean>} true si le serveur a répondu
+ */
+export function ensureServerAwake({ force = false } = {}) {
+  const now = Date.now()
+  if (!force && now - lastAwakeAt < AWAKE_TTL_MS) {
+    return Promise.resolve(true)
+  }
+  if (wakePromise) return wakePromise
+
+  wakePromise = wakeClient
+    .get(`${API_BASE}/health`)
+    .then(() => {
+      lastAwakeAt = Date.now()
+      return true
+    })
+    .catch(() => false)
+    .finally(() => {
+      wakePromise = null
+    })
+
+  return wakePromise
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 90000, // 90s : tolère le réveil du serveur Render (cold start ~30-60s)
+  timeout: 120000, // 120 s : tolère un cold start Render lent
 })
 
 api.interceptors.request.use(
@@ -46,15 +83,27 @@ api.interceptors.response.use(
       return Promise.reject(error)
     }
 
+    // Pas de réponse HTTP → problème réseau / serveur endormi / injoignable.
     if (!response) {
       const cfg = error.config || {}
       const method = (cfg.method || 'get').toLowerCase()
-      if (method === 'get' && !cfg._networkRetry) {
-        cfg._networkRetry = true
-        await new Promise((resolve) => setTimeout(resolve, 4000))
+      const attempts = cfg._netAttempts || 0
+      const maxAttempts = method === 'get' ? 2 : 1
+
+      if (attempts < maxAttempts) {
+        cfg._netAttempts = attempts + 1
+        if (attempts === 0) {
+          dispatchToast('info', 'Le serveur se réveille… nouvelle tentative automatique en cours.')
+        }
+        await ensureServerAwake({ force: true })
+        await new Promise((resolve) => setTimeout(resolve, 1500))
         return api(cfg)
       }
-      dispatchToast('error', 'Connexion au serveur impossible (serveur en veille ?). Patientez ~30 s puis réessayez.')
+
+      dispatchToast(
+        'error',
+        'Serveur injoignable. Le backend est en cours de démarrage ou arrêté — patientez ~30 s puis réessayez.'
+      )
       return Promise.reject(error)
     }
 
