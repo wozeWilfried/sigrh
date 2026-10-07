@@ -1,0 +1,110 @@
+# =====================================================================
+# SIGRH - Pile de production pour VPS OVH (Docker Compose)
+#
+#   web      : Caddy -> sert le front React + HTTPS auto + reverse proxy
+#   backend  : API Spring Boot (Java 21)
+#   ml       : microservice ML FastAPI/XGBoost (optionnel)
+#   db       : PostgreSQL 16 (données persistantes)
+#
+# Démarrage :
+#   cp .env.example .env   # puis renseigner les secrets
+#   docker compose -f docker-compose.prod.yml up -d --build
+# =====================================================================
+name: sigrh
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sigrh}
+      POSTGRES_USER: ${POSTGRES_USER:-sigrh}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Renseignez POSTGRES_PASSWORD dans .env}
+      TZ: ${TZ:-Africa/Douala}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sigrh} -d ${POSTGRES_DB:-sigrh}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [sigrh]
+
+  backend:
+    build:
+      context: ./sigrh-backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      TZ: ${TZ:-Africa/Douala}
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-sigrh}
+      DB_USERNAME: ${POSTGRES_USER:-sigrh}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Renseignez POSTGRES_PASSWORD dans .env}
+      DB_DRIVER: org.postgresql.Driver
+      JPA_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      JWT_SECRET: ${JWT_SECRET:?Renseignez JWT_SECRET dans .env (>= 32 caractères)}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      FRONTEND_URL: ${FRONTEND_URL}
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_PROVIDER: ${MAIL_PROVIDER:-gmail}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      ALERT_RECIPIENTS: ${ALERT_RECIPIENTS:-}
+      UPLOAD_DIR: /app/uploads
+      ML_SERVICE_URL: http://ml:8000
+      SEED_ENABLED: ${SEED_ENABLED:-true}
+      SEED_EMPLOYEES: ${SEED_EMPLOYEES:-150}
+      SEED_PRESENCE_DAYS: ${SEED_PRESENCE_DAYS:-30}
+      SEED_MONTHS_PAIE: ${SEED_MONTHS_PAIE:-6}
+      SEED_MATERIELS: ${SEED_MATERIELS:-200}
+      DEFAULT_PASSWORD: ${DEFAULT_PASSWORD:-SIGRH@2026}
+      JAVA_TOOL_OPTIONS: "-Xms256m -Xmx${BACKEND_HEAP_MB:-1024}m"
+    volumes:
+      - uploads:/app/uploads
+    expose:
+      - "8080"
+    networks: [sigrh]
+
+  ml:
+    build:
+      context: ./sigrh-backend/ml-service
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "8000"
+    networks: [sigrh]
+
+  web:
+    build:
+      context: ./sigrh-frontend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      # "sigrh.mondomaine.com" => HTTPS auto ; ":80" => HTTP simple (test)
+      DOMAIN: ${DOMAIN:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [sigrh]
+
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:
+  caddy_config:
+
+networks:
+  sigrh:
+    driver: bridge

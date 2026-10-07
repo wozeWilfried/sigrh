@@ -1,0 +1,35 @@
+# Caddy : sert le frontend statique, fait le reverse proxy /api et /ml,
+# et gère automatiquement les certificats HTTPS (Let's Encrypt).
+#
+# DOMAIN doit être le nom de domaine pointant vers ce serveur (ex: sigrh.mondomaine.com).
+# Sans domaine (test local), lancer avec DOMAIN=":80".
+
+{$DOMAIN} {
+	encode gzip zstd
+
+	# API backend Spring Boot
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	# Microservice ML (optionnel)
+	handle /ml/* {
+		uri strip_prefix /ml
+		reverse_proxy ml:8000
+	}
+
+	# Frontend SPA (React Router)
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		-Strict-Transport-Security
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}

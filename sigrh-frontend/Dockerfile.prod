@@ -1,0 +1,18 @@
+# ---- Étape 1 : build de l'application React/Vite ----
+FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+# VITE_API_URL vide => appels en /api (même origine, via Caddy). Aucun CORS nécessaire.
+ARG VITE_API_URL=""
+ENV VITE_API_URL=$VITE_API_URL
+RUN npm run build
+
+# ---- Étape 2 : Caddy sert les fichiers + reverse proxy de l'API + HTTPS auto ----
+FROM caddy:2-alpine
+COPY --from=build /app/dist /srv
+COPY Caddyfile.prod /etc/caddy/Caddyfile
+EXPOSE 80 443
