@@ -109,7 +109,7 @@ api.interceptors.response.use(
 
     const { status } = response
 
-    if (status === 401 && !config?._retry && !config?.url?.includes('/auth/refresh')) {
+    if (status === 401 && !config?._retry && !config?.url?.includes('/auth/login') && !config?.url?.includes('/auth/refresh')) {
       const refreshToken = localStorage.getItem('refreshToken')
       if (!refreshToken) {
         localStorage.removeItem('token')

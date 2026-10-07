@@ -121,10 +121,8 @@ export default function Login() {
 
   useEffect(() => {
     if (user?.role) {
-      if (user.firstLogin && user.employeId) {
-        navigate(`/employees/${user.employeId}`, { replace: true })
-      } else if (user.firstLogin) {
-        navigate('/auth/change-password', { replace: true })
+      if (user.firstLogin) {
+        navigate('/profil', { replace: true })
       } else {
         const rolePath = user.role.toLowerCase().replace('_', '')
         navigate(`/${rolePath}`, { replace: true })
@@ -169,11 +167,9 @@ export default function Login() {
 
     setLoading(true)
     try {
-      const userData = await login(form)
-      if (userData.firstLogin && userData.employeId) {
-        navigate(`/employees/${userData.employeId}`, { replace: true })
-      } else if (userData.firstLogin) {
-        navigate('/auth/change-password', { replace: true })
+      const userData = await login({ username: form.username.trim(), password: form.password })
+      if (userData.firstLogin) {
+        navigate('/profil', { replace: true })
       } else {
         const rolePath = userData.role.toLowerCase().replace('_', '')
         navigate(`/${rolePath}`, { replace: true })
@@ -289,6 +285,8 @@ export default function Login() {
                 error={errors.username}
                 placeholder="ex: j.kouam"
                 autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
                 spellCheck={false}
               />
             </motion.div>
@@ -303,6 +301,8 @@ export default function Login() {
                 error={errors.password}
                 placeholder="••••••••"
                 autoComplete="current-password"
+                autoCapitalize="none"
+                autoCorrect="off"
                 rightElement={
                   <button
                     type="button"
