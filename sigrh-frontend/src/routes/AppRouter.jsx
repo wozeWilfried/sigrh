@@ -25,6 +25,7 @@ import ManagerEmployes from '../pages/manager/Employes'
 import ManagerPresences from '../pages/manager/Presences'
 import SecretaryDashboard from '../pages/secretary/Dashboard'
 import TurnoverPredictions from '../pages/admin/TurnoverPredictions'
+import DepartsRetraite from '../pages/admin/DepartsRetraite'
 import RapportsPage from '../pages/admin/RapportsPage'
 import CategoriesMateriel from '../pages/admin/CategoriesMateriel'
 import MaterielDashboard from '../pages/admin/MaterielDashboard'
@@ -248,6 +249,14 @@ export default function AppRouter() {
         element={
           <ProtectedRoute roles={['ADMIN', 'MANAGER']}>
             <TurnoverPredictions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/departs-retraite"
+        element={
+          <ProtectedRoute roles={['ADMIN', 'RH', 'MANAGER']}>
+            <DepartsRetraite />
           </ProtectedRoute>
         }
       />

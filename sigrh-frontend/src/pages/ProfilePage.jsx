@@ -208,7 +208,7 @@ export default function ProfilePage() {
                     value={telephone}
                     onChange={(e) => setTelephone(e.target.value)}
                     className={inputClass}
-                    placeholder="+225 07 00 00 00 00"
+                    placeholder="+237 6 70 00 00 00"
                   />
                 </Field>
                 <Field label="Adresse" icon={MapPin} full>

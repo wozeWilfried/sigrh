@@ -282,11 +282,12 @@ public class EmployeService {
     }
 
     private static final Map<StatutEmploye, Set<StatutEmploye>> VALID_TRANSITIONS = Map.of(
-        ACTIF, Set.of(INACTIF, SUSPENDU, EN_CONGE, DEPART),
-        INACTIF, Set.of(ACTIF, DEPART),
-        SUSPENDU, Set.of(ACTIF, INACTIF, DEPART),
-        EN_CONGE, Set.of(ACTIF, INACTIF, DEPART),
-        DEPART, Set.of()
+        ACTIF, Set.of(INACTIF, SUSPENDU, EN_CONGE, DEPART, RETRAITE),
+        INACTIF, Set.of(ACTIF, DEPART, RETRAITE),
+        SUSPENDU, Set.of(ACTIF, INACTIF, DEPART, RETRAITE),
+        EN_CONGE, Set.of(ACTIF, INACTIF, DEPART, RETRAITE),
+        DEPART, Set.of(),
+        RETRAITE, Set.of()
     );
 
     /**

@@ -42,6 +42,7 @@ const adminNavigation = [
         children: [
           { label: 'Liste des employés', path: '/admin/employes' },
           { label: 'Ajouter un employé', path: '/admin/employes/ajouter' },
+          { label: 'Départs en retraite', path: '/admin/departs-retraite' },
         ],
       },
       {
@@ -130,6 +131,7 @@ const managerNavigation = [
         icon: Users,
         children: [
           { label: 'Liste des employés', path: '/manager/employes' },
+          { label: 'Départs en retraite', path: '/admin/departs-retraite' },
         ],
       },
       {

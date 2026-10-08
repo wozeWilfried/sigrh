@@ -2,6 +2,7 @@ package com.sigrh.cwa.controller;
 
 import com.sigrh.cwa.dto.*;
 import com.sigrh.cwa.service.EmployeService;
+import com.sigrh.cwa.service.RetraiteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +26,18 @@ import java.util.Map;
 public class EmployeController {
 
     private final EmployeService employeService;
+    private final RetraiteService retraiteService;
+
+    /**
+     * Liste des départs en retraite (déjà partis et à venir sur 5 ans).
+     * Alimente l'analyse prédictive du turnover.
+     *
+     * @return Liste des départs en retraite triés
+     */
+    @GetMapping("/departs-retraite")
+    public ResponseEntity<List<Map<String, Object>>> getDepartsRetraite() {
+        return ResponseEntity.ok(retraiteService.getDepartsRetraite());
+    }
 
     /**
      * Récupère tous les employés avec filtres et pagination (accès filtré selon les permissions).

@@ -94,6 +94,9 @@ public class AnalysePredictiveService {
         // Facteur 5 : statut inactif ou suspendu
         if (emp.getStatut() == StatutEmploye.SUSPENDU) { score += 0.10; facteurs.add("Statut suspendu (+10%)"); }
 
+        // Facteur 6 : départ en retraite (départ certain à l'âge légal — 60 ans)
+        score += facteurRetraite(emp, facteurs);
+
         score = Math.min(score, 1.0);
 
         // Générer une alerte si le score est élevé
@@ -437,7 +440,38 @@ public class AnalysePredictiveService {
         if (nbConges > 4) score += 0.15;
         // Statut
         if (emp.getStatut() == StatutEmploye.SUSPENDU) score += 0.20;
+        // Départ en retraite (départ certain à 60 ans)
+        score += facteurRetraite(emp, new ArrayList<>());
         return Math.min(score, 1.0);
+    }
+
+    /**
+     * Calcule la contribution du départ en retraite au risque de départ.
+     * Un employé ayant atteint l'âge légal (60 ans) part de façon certaine
+     * (risque maximal) ; la proximité de la retraite augmente progressivement
+     * le risque dès 55 ans.
+     *
+     * @param emp      employé analysé
+     * @param facteurs liste de facteurs à enrichir (peut être null)
+     * @return contribution au score (0.0 → 1.0)
+     */
+    private double facteurRetraite(Employe emp, List<String> facteurs) {
+        if (emp.getDateNaissance() == null) return 0.0;
+        long age = ChronoUnit.YEARS.between(emp.getDateNaissance(), LocalDate.now());
+
+        if (emp.getStatut() == StatutEmploye.RETRAITE || age >= RetraiteService.AGE_LEGAL_RETRAITE) {
+            if (facteurs != null) facteurs.add("Départ en retraite (âge légal " + RetraiteService.AGE_LEGAL_RETRAITE + " ans)");
+            return 1.0;
+        }
+        if (age >= 58) {
+            if (facteurs != null) facteurs.add("Retraite imminente (age " + age + " ans)");
+            return 0.60;
+        }
+        if (age >= 55) {
+            if (facteurs != null) facteurs.add("Proche de la retraite (age " + age + " ans)");
+            return 0.35;
+        }
+        return 0.0;
     }
 
     private NiveauAlerte getNiveau(double score) {

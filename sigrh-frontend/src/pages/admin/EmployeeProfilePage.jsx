@@ -42,6 +42,9 @@ const employeeStatusStyles = {
   INACTIF: 'bg-slate-100 text-slate-600 ring-slate-200',
   SUSPENDED: 'bg-red-50 text-red-700 ring-red-200',
   SUSPENDU: 'bg-red-50 text-red-700 ring-red-200',
+  EN_CONGE: 'bg-amber-50 text-amber-700 ring-amber-200',
+  DEPART: 'bg-rose-50 text-rose-700 ring-rose-200',
+  RETRAITE: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
 }
 
 const attendanceStatusStyles = {
@@ -780,6 +783,9 @@ function formatStatus(status) {
     ACTIF: 'ACTIVE',
     INACTIF: 'INACTIVE',
     SUSPENDU: 'SUSPENDED',
+    EN_CONGE: 'ON_LEAVE',
+    DEPART: 'DEPARTED',
+    RETRAITE: 'RETIRED',
     APPROUVE: 'APPROVED',
     EN_ATTENTE: 'PENDING',
     REJETE: 'REJECTED',

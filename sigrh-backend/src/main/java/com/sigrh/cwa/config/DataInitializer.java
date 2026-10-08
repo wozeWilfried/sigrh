@@ -75,42 +75,44 @@ public class DataInitializer implements CommandLineRunner {
     private final Random random = new Random(20260101L);
 
     private static final String[] NOMS = {
-        "Diallo", "Koné", "Talla", "Ngono", "Sy", "Cissé", "Ndiaye", "Traoré",
-        "Kouassi", "Yao", "Bamba", "Ouattara", "Sow", "Bah", "Camara", "Touré",
-        "Kouadio", "Gnahoré", "Kouamé", "Assamoi", "Zadi", "Mensah", "Adjovi",
-        "Dossou", "Sagna", "Diop", "Fall", "Gueye", "Mbaye", "Faye", "Sarr",
-        "Kaboré", "Ouédraogo", "Compaoré", "Sanou", "Zongo", "Sawadogo"
+        "Fotso", "Kamga", "Ngo", "Tchoua", "Mbiya", "Njoya", "Fouda", "Atangana",
+        "Essomba", "Owona", "Onana", "Mbarga", "Eyenga", "Ndongo", "Tchana", "Ndam",
+        "Fokou", "Tagne", "Keutcha", "Djoumessi", "Feudjio", "Tchoumi", "Nkoulou",
+        "Manga", "Bilong", "Moukoko", "Ateba", "Etoundi", "Belinga", "Nkeng",
+        "Nguetsop", "Kouam", "Same", "Mbah", "Ndjock", "Tientcheu", "Kenfack",
+        "Djeukam", "Simo", "Nana", "Mvondo", "Abena", "Etoa", "Mefire", "Djiofack",
+        "Sop", "Tchakounté", "Wandji", "Youmbi"
     };
 
     private static final String[] PRENOMS_M = {
-        "Mamadou", "Ibrahim", "Ousmane", "Jean", "Patrick", "Serge", "Yannick",
-        "Karim", "Amadou", "Cheikh", "Modou", "Alioune", "Omar", "Souleymane",
-        "Boubacar", "Seydou", "Lassina", "Adama", "Issa", "Hamed", "Rachid",
-        "Franck", "Cédric", "Boris", "Hervé", "Ange", "Prince", "Didier",
-        "Eugène", "Wilfried", "Landry", "Armand", "Rodrigue", "Thierry"
+        "Landry", "Bertrand", "Achille", "Blaise", "Cédric", "Armand", "Serge",
+        "Fabrice", "Ghislain", "Hervé", "Lionnel", "Martial", "Norbert", "Olivier",
+        "Pascal", "Rodrigue", "Thierry", "Valentin", "Yves", "Emmanuel", "Stéphane",
+        "Franck", "Guy", "Jean-Claude", "Éloi", "Alphonse", "Gérard", "Marcel",
+        "Dieudonné", "Clément", "Boniface", "Prosper", "Sylvain", "Raphaël"
     };
 
     private static final String[] PRENOMS_F = {
-        "Aminata", "Fatou", "Marie", "Awa", "Nadège", "Carine", "Adjoua",
-        "Bintou", "Kadiatou", "Mariama", "Aïcha", "Safiatou", "Djenabou",
-        "Odette", "Prisca", "Sonia", "Léa", "Nadine", "Christelle", "Vanessa",
-        "Estelle", "Mireille", "Ruth", "Grace", "Rebecca", "Gloria", "Anne",
-        "Jeanne", "Clarisse", "Sylvie", "Béatrice", "Lucie", "Josiane"
+        "Estelle", "Ariane", "Solange", "Nadège", "Sandrine", "Carine", "Chantal",
+        "Danielle", "Élodie", "Georgette", "Honorine", "Irène", "Josiane", "Léonie",
+        "Michelle", "Odile", "Pauline", "Rachelle", "Thérèse", "Véronique", "Yolande",
+        "Adèle", "Berthe", "Ginette", "Huguette", "Justine", "Marceline", "Perpétue",
+        "Rosalie", "Séraphine", "Sylvie", "Vanessa", "Mireille", "Gloria"
     };
 
     /** Départements : nom, description, responsable */
     private static final String[][] DEPARTEMENTS = {
-        {"Ressources Humaines", "Gestion du personnel, recrutement et paie", "Marie Diallo"},
-        {"Informatique", "Développement, infrastructure et support", "Jean Koné"},
-        {"Comptabilité", "Comptabilité générale et fiscale", "Ousmane Cissé"},
-        {"Finance", "Trésorerie, budget et contrôle de gestion", "Fatou Sy"},
-        {"Commercial", "Ventes et développement commercial", "Mamadou Ndiaye"},
-        {"Marketing", "Communication et image de marque", "Awa Traoré"},
-        {"Logistique", "Approvisionnement, stock et transport", "Ibrahim Bamba"},
-        {"Exploitation", "Production et exploitation des services", "Omar Ouattara"},
-        {"Qualité", "Qualité, hygiène et conformité", "Nadège Kouassi"},
-        {"Juridique", "Affaires juridiques et réglementaires", "Serge Yao"},
-        {"Systèmes d'Information", "Systèmes d'information et données", "Yannick Sow"},
+        {"Ressources Humaines", "Gestion du personnel, recrutement et paie", "Marie Fouda"},
+        {"Informatique", "Développement, infrastructure et support", "Jean Kamga"},
+        {"Comptabilité", "Comptabilité générale et fiscale", "Achille Tchoumi"},
+        {"Finance", "Trésorerie, budget et contrôle de gestion", "Solange Mbarga"},
+        {"Commercial", "Ventes et développement commercial", "Landry Fotso"},
+        {"Marketing", "Communication et image de marque", "Ariane Njoya"},
+        {"Logistique", "Approvisionnement, stock et transport", "Cédric Tchoua"},
+        {"Exploitation", "Production et exploitation des services", "Bertrand Essomba"},
+        {"Qualité", "Qualité, hygiène et conformité", "Nadège Onana"},
+        {"Juridique", "Affaires juridiques et réglementaires", "Serge Eyenga"},
+        {"Systèmes d'Information", "Systèmes d'information et données", "Yannick Ndongo"},
         {"Direction", "Direction générale et stratégie", "Admin Système"}
     };
 
@@ -200,22 +202,22 @@ public class DataInitializer implements CommandLineRunner {
         // --- 6 comptes de démonstration à identifiants fixes ---
         demo(users, employes, depts, "admin", "admin123", Role.ADMIN, "EMP001",
                 "Système", "Admin", "Administrateur Système", Genre.MASCULIN, 950000,
-                StatutEmploye.ACTIF, "Direction", "1985-03-12", "2015-01-05", "+2250700000001");
+                StatutEmploye.ACTIF, "Direction", "1985-03-12", "2015-01-05", "+237670000001");
         demo(users, employes, depts, "rh", "rh123", Role.RH, "EMP002",
-                "Diallo", "Marie", "Responsable RH", Genre.FEMININ, 750000,
-                StatutEmploye.ACTIF, "Ressources Humaines", "1990-07-22", "2015-03-01", "+2250700000002");
+                "Fouda", "Marie", "Responsable RH", Genre.FEMININ, 750000,
+                StatutEmploye.ACTIF, "Ressources Humaines", "1990-07-22", "2015-03-01", "+237670000002");
         demo(users, employes, depts, "manager", "manager123", Role.MANAGER, "EMP003",
-                "Koné", "Jean", "Chef de Projet", Genre.MASCULIN, 680000,
-                StatutEmploye.ACTIF, "Systèmes d'Information", "1988-11-10", "2012-06-15", "+2250700000003");
+                "Kamga", "Jean", "Chef de Projet", Genre.MASCULIN, 680000,
+                StatutEmploye.ACTIF, "Systèmes d'Information", "1988-11-10", "2012-06-15", "+237670000003");
         demo(users, employes, depts, "employe", "employe123", Role.EMPLOYE, "EMP004",
-                "Sy", "Fatou", "Développeuse", Genre.FEMININ, 520000,
-                StatutEmploye.ACTIF, "Informatique", "1995-04-05", "2022-09-01", "+2250700000004");
+                "Mbarga", "Ariane", "Développeuse", Genre.FEMININ, 520000,
+                StatutEmploye.ACTIF, "Informatique", "1995-04-05", "2022-09-01", "+237670000004");
         demo(users, employes, depts, "employe2", "employe123", Role.EMPLOYE, "EMP005",
-                "Cissé", "Ousmane", "Comptable", Genre.MASCULIN, 450000,
-                StatutEmploye.ACTIF, "Comptabilité", "1992-02-18", "2020-09-01", "+2250700000005");
+                "Ngo", "Bertrand", "Comptable", Genre.MASCULIN, 450000,
+                StatutEmploye.ACTIF, "Comptabilité", "1992-02-18", "2020-09-01", "+237670000005");
         demo(users, employes, depts, "secretaire", "secretaire123", Role.SECRETAIRE, "EMP006",
-                "Ndiaye", "Aminata", "Secrétaire de direction", Genre.FEMININ, 400000,
-                StatutEmploye.ACTIF, "Ressources Humaines", "1993-08-12", "2021-03-01", "+2250700000006");
+                "Njoya", "Estelle", "Secrétaire de direction", Genre.FEMININ, 400000,
+                StatutEmploye.ACTIF, "Ressources Humaines", "1993-08-12", "2021-03-01", "+237670000006");
 
         // --- Employés générés en masse ---
         String defaultHash = passwordEncoder.encode(defaultPassword);
@@ -237,15 +239,31 @@ public class DataInitializer implements CommandLineRunner {
             users.add(user);
 
             Departement dept = pickDept(depts);
-            LocalDate naissance = randomDate(LocalDate.of(1968, 1, 1), LocalDate.of(2001, 12, 31));
-            LocalDate embauche = randomDate(LocalDate.of(2010, 1, 1), LocalDate.now().minusMonths(1));
+            // Répartition réaliste des âges : ~10% de retraités (60 ans et +),
+            // ~8% de salariés proches de la retraite (56-59 ans).
+            LocalDate naissance;
+            LocalDate embauche;
+            StatutEmploye statut;
+            int trancheAge = random.nextInt(100);
+            if (trancheAge < 10) {
+                naissance = randomDate(LocalDate.now().minusYears(65), LocalDate.now().minusYears(60));
+                embauche = randomDate(LocalDate.of(1995, 1, 1), LocalDate.of(2015, 1, 1));
+                statut = StatutEmploye.RETRAITE;
+            } else if (trancheAge < 18) {
+                naissance = randomDate(LocalDate.now().minusYears(59), LocalDate.now().minusYears(56));
+                embauche = randomDate(LocalDate.of(1990, 1, 1), LocalDate.of(2010, 1, 1));
+                statut = StatutEmploye.ACTIF;
+            } else {
+                naissance = randomDate(LocalDate.of(1970, 1, 1), LocalDate.of(2001, 12, 31));
+                embauche = randomDate(LocalDate.of(2010, 1, 1), LocalDate.now().minusMonths(1));
+                statut = randomStatutEmploye();
+            }
             double salaire = round1000(300000 + random.nextInt(1_500_001));
-            StatutEmploye statut = randomStatutEmploye();
 
             Employe e = Employe.builder()
                     .matricule(String.format("EMP%03d", i))
                     .nom(nom).prenom(prenom).email(email)
-                    .telephone("+225" + (10 + random.nextInt(90)) + String.format("%06d", random.nextInt(1_000_000)))
+                    .telephone("+2376" + String.format("%08d", random.nextInt(100_000_000)))
                     .genre(genre)
                     .dateNaissance(naissance)
                     .dateEmbauche(embauche)
@@ -296,7 +314,8 @@ public class DataInitializer implements CommandLineRunner {
             LocalDate fin = (type == TypeContrat.CDI) ? null : debut.plusMonths(12 + random.nextInt(24));
             StatutContrat statut = (e.getStatut() == StatutEmploye.ACTIF || e.getStatut() == StatutEmploye.EN_CONGE)
                     ? StatutContrat.ACTIF
-                    : (e.getStatut() == StatutEmploye.DEPART ? StatutContrat.TERMINE : StatutContrat.RESILIE);
+                    : ((e.getStatut() == StatutEmploye.DEPART || e.getStatut() == StatutEmploye.RETRAITE)
+                        ? StatutContrat.TERMINE : StatutContrat.RESILIE);
             contrats.add(Contrat.builder()
                     .reference("CTR-" + debut.getYear() + "-" + e.getMatricule())
                     .employe(e).type(type).dateDebut(debut).dateFin(fin)

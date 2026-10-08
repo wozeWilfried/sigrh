@@ -232,6 +232,7 @@ public class DashboardService {
         m.put("actifs", all.stream().filter(e -> e.getStatut() == StatutEmploye.ACTIF).count());
         m.put("inactifs", all.stream().filter(e -> e.getStatut() == StatutEmploye.INACTIF).count());
         m.put("suspendus", all.stream().filter(e -> e.getStatut() == StatutEmploye.SUSPENDU).count());
+        m.put("retraites", all.stream().filter(e -> e.getStatut() == StatutEmploye.RETRAITE).count());
         return m;
     }
 

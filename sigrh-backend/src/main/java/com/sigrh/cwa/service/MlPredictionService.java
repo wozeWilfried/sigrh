@@ -34,16 +34,18 @@ public class MlPredictionService {
         Employe emp = employeRepo.findById(employeId).orElseThrow();
         Map<String, Object> features = extractFeatures(emp);
 
+        Map<String, Object> result = null;
         try {
             Map<String, Object> request = Map.of("employe", features);
-            var response = restTemplate.postForObject(
+            result = restTemplate.postForObject(
                 mlServiceUrl + "/predict", request, Map.class);
-            if (response != null) return response;
         } catch (Exception e) {
             // Fallback local
         }
 
-        return fallbackPredict(emp, features);
+        if (result == null) result = fallbackPredict(emp, features);
+        applyRetirementOverride(result, emp);
+        return result;
     }
 
     /**
@@ -55,18 +57,34 @@ public class MlPredictionService {
             .map(this::extractFeatures)
             .collect(Collectors.toList());
 
+        List<Map<String, Object>> results = null;
         try {
             Map<String, Object> request = Map.of("employes", employesData);
             var response = restTemplate.postForObject(
                 mlServiceUrl + "/predict/batch", request, List.class);
-            if (response != null) return response;
+            if (response != null) results = response;
         } catch (Exception e) {
             // Fallback local
         }
 
-        return actifs.stream()
-            .map(emp -> fallbackPredict(emp, extractFeatures(emp)))
-            .collect(Collectors.toList());
+        if (results == null) {
+            results = actifs.stream()
+                .map(emp -> fallbackPredict(emp, extractFeatures(emp)))
+                .collect(Collectors.toList());
+        }
+
+        // Intègre le départ en retraite (départ certain) dans chaque prédiction
+        Map<Long, Employe> parId = actifs.stream()
+            .collect(Collectors.toMap(Employe::getId, e -> e, (a, b) -> a));
+        for (Map<String, Object> r : results) {
+            if (r == null) continue;
+            Object id = r.get("employeId") != null ? r.get("employeId") : r.get("id");
+            if (r.get("id") == null) r.put("id", r.get("employeId"));
+            if (id instanceof Number) {
+                applyRetirementOverride(r, parId.get(((Number) id).longValue()));
+            }
+        }
+        return results;
     }
 
     /**
@@ -205,5 +223,56 @@ public class MlPredictionService {
             default ->
                 "Situation stable : aucune action urgente. Continuer suivi RH standard.";
         };
+    }
+
+    /**
+     * Intègre le départ en retraite dans la prédiction de turnover.
+     * Un employé ayant atteint l'âge légal (60 ans) ou au statut RETRAITE
+     * représente un départ certain ; le risque augmente dès 55 ans.
+     *
+     * @param result prédiction à enrichir (peut être null)
+     * @param emp    employé concerné
+     */
+    private void applyRetirementOverride(Map<String, Object> result, Employe emp) {
+        if (result == null || emp == null || emp.getDateNaissance() == null) return;
+
+        long age = ChronoUnit.YEARS.between(emp.getDateNaissance(), LocalDate.now());
+        boolean retraite = emp.getStatut() == StatutEmploye.RETRAITE
+            || age >= RetraiteService.AGE_LEGAL_RETRAITE;
+        if (!retraite && age < 55) return;
+
+        double plancher = retraite ? 0.95 : (age >= 58 ? 0.65 : 0.45);
+        double courant = toDouble(result.get("scoreRisque"));
+        double score = Math.max(courant, plancher);
+
+        String niveau = score >= 0.75 ? "CRITIQUE" : score >= 0.50 ? "ELEVE"
+            : score >= 0.25 ? "MOYEN" : "FAIBLE";
+        double arrondi = Math.round(score * 10000.0) / 10000.0;
+
+        result.put("scoreRisque", arrondi);
+        result.put("probabilite", arrondi);
+        result.put("niveau", niveau);
+        result.put("recommandation", getRecommandation(niveau));
+        if (result.get("nom") != null) {
+            result.put("employeNom", result.get("nom") + " " + result.get("prenom"));
+        }
+        if (result.get("facteurs") == null) result.put("facteurs", new ArrayList<String>());
+
+        @SuppressWarnings("unchecked")
+        List<String> facteurs = result.get("facteurs") instanceof List
+            ? (List<String>) result.get("facteurs")
+            : new ArrayList<String>();
+        String libelle = retraite
+            ? "Départ en retraite (âge légal " + RetraiteService.AGE_LEGAL_RETRAITE + " ans)"
+            : "Proche de la retraite (âge " + age + " ans)";
+        if (facteurs.stream().noneMatch(f -> f != null && f.contains("retraite"))) {
+            facteurs.add(libelle);
+        }
+        result.put("facteurs", facteurs);
+        result.put("facteursRisque", facteurs);
+    }
+
+    private double toDouble(Object value) {
+        return value instanceof Number ? ((Number) value).doubleValue() : 0.0;
     }
 }

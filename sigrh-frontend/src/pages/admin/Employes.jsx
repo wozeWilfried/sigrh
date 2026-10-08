@@ -43,6 +43,7 @@ const statusOptions = [
   { label: 'Suspendu', value: 'SUSPENDU' },
   { label: 'En congé', value: 'EN_CONGE' },
   { label: 'Départ', value: 'DEPART' },
+  { label: 'Départ en retraite', value: 'RETRAITE' },
 ]
 
 const statusStyles = {
@@ -51,6 +52,7 @@ const statusStyles = {
   SUSPENDU: 'bg-red-50 text-red-700 ring-red-200',
   EN_CONGE: 'bg-amber-50 text-amber-700 ring-amber-200',
   DEPART: 'bg-rose-50 text-rose-700 ring-rose-200',
+  RETRAITE: 'bg-indigo-50 text-indigo-700 ring-indigo-200',
 }
 
 const statusLabels = {
@@ -59,9 +61,10 @@ const statusLabels = {
   SUSPENDU: 'Suspendu',
   EN_CONGE: 'En congé',
   DEPART: 'Départ',
+  RETRAITE: 'Départ en retraite',
 }
 
-const STATUS_LIST = ['ACTIF', 'INACTIF', 'SUSPENDU', 'EN_CONGE', 'DEPART']
+const STATUS_LIST = ['ACTIF', 'INACTIF', 'SUSPENDU', 'EN_CONGE', 'DEPART', 'RETRAITE']
 
 export default function Employes() {
   const [search, setSearch] = useState('')
@@ -390,7 +393,8 @@ function EmployeeRow({ employee, onRefetch }) {
                         s === 'ACTIF' ? 'bg-emerald-500' :
                         s === 'INACTIF' ? 'bg-slate-400' :
                         s === 'SUSPENDU' ? 'bg-red-500' :
-                        s === 'EN_CONGE' ? 'bg-amber-500' : 'bg-rose-500'
+                        s === 'EN_CONGE' ? 'bg-amber-500' :
+                        s === 'RETRAITE' ? 'bg-indigo-500' : 'bg-rose-500'
                       }`}
                     />
                     {statusLabels[s]}
