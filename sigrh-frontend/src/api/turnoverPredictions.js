@@ -153,16 +153,21 @@ function recalculate(predictions) {
 // ─── Normalizer ───────────────────────────────────────────────────────────────
 
 function normalizePrediction(p) {
-  const score = p.scoreRisque ?? p.riskScore ?? p.score ?? 0
+  const rawScore = p.scoreRisque ?? p.riskScore ?? p.score ?? 0
+  // L'API renvoie parfois un score normalisé (0 → 1) ; on l'exprime en pourcentage.
+  const score = rawScore <= 1 ? Math.round(rawScore * 100) : Math.round(rawScore)
+  const nomComplet =
+    p.employeNom ?? p.employeeName ?? p.name ??
+    [p.prenom, p.nom].filter(Boolean).join(' ')
   return {
-    id: p.id,
+    id: p.id ?? p.employeId,
     employeId: p.employeId ?? p.employeeId,
-    employeNom: p.employeNom ?? p.employeeName ?? p.name ?? 'Employé',
+    employeNom: nomComplet || 'Employé',
     departement: p.departement ?? p.department ?? '-',
     poste: p.poste ?? p.jobTitle ?? '',
     scoreRisque: score,
     niveau: p.niveau ?? p.riskLevel ?? (score >= 70 ? 'ELEVE' : score >= 40 ? 'MOYEN' : 'FAIBLE'),
-    facteurs: p.facteurs ?? p.factors ?? [],
+    facteurs: p.facteurs ?? p.facteursRisque ?? p.factors ?? [],
     dateCalcul: p.dateCalcul ?? p.calculatedAt ?? new Date().toISOString().slice(0, 10),
   }
 }
