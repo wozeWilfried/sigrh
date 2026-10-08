@@ -628,8 +628,9 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private LocalDate randomDate(LocalDate min, LocalDate max) {
-        long jours = min.until(max).getDays() + 1;
-        return min.plusDays(random.nextInt((int) Math.max(1, jours)));
+        long jours = java.time.temporal.ChronoUnit.DAYS.between(min, max);
+        if (jours <= 0) return min;
+        return min.plusDays((long) (random.nextDouble() * (jours + 1)));
     }
 
     private List<LocalDate> lastWorkingDays(int nombre) {
